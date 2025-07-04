@@ -40,7 +40,7 @@ export default function UpcomingEvents() {
       // Fetch user's upcoming incomes (representing upcoming workshops)
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('id, name, date, platform, amount, guest_count')
+        .select('id, name, date, platform, payment, guest_count')
         .eq('user_id', user.id)
         .gte('date', todayStr)
         .lte('date', endDateStr)
@@ -57,11 +57,11 @@ export default function UpcomingEvents() {
           date: income.date,
           location: income.platform || 'TBD',
           participants: income.guest_count || 0,
-          price: income.amount || 0,
+          price: income.payment || 0,
           eventType: income.platform === 'Zoom' ? 'Online' : 'In-person',
-          status: getEventStatus(income.date, income.amount),
+          status: getEventStatus(income.date, income.payment),
           icon: Calendar,
-          color: getEventColor(income.date, income.amount)
+          color: getEventColor(income.date, income.payment)
         };
       }) || [];
 

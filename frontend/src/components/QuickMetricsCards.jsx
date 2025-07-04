@@ -37,7 +37,7 @@ export default function QuickMetricsCards() {
       // Fetch user's incomes for this year
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at, name, guest_count')
+        .select('payment, created_at, name, guest_count')
         .eq('user_id', user.id)
         .gte('created_at', yearStart)
         .lte('created_at', yearEnd);
@@ -47,7 +47,7 @@ export default function QuickMetricsCards() {
       // Fetch user's expenses for this year
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
-        .select('amount, created_at')
+        .select('cost, created_at')
         .eq('user_id', user.id)
         .gte('created_at', yearStart)
         .lte('created_at', yearEnd);
@@ -55,8 +55,8 @@ export default function QuickMetricsCards() {
       if (expensesError) throw expensesError;
 
       // Calculate totals
-      const totalIncome = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
-      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+      const totalIncome = incomes?.reduce((sum, income) => sum + (income.payment || 0), 0) || 0;
+      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.cost || 0), 0) || 0;
       const netProfit = totalIncome - totalExpenses;
 
       // Calculate most popular workshop (based on guest count)
@@ -73,20 +73,20 @@ export default function QuickMetricsCards() {
 
       const { data: lastYearIncomes } = await supabase
         .from('incomes')
-        .select('amount')
+        .select('payment')
         .eq('user_id', user.id)
         .gte('created_at', lastYearStart)
         .lte('created_at', lastYearEnd);
 
       const { data: lastYearExpenses } = await supabase
         .from('expenses')
-        .select('amount')
+        .select('cost')
         .eq('user_id', user.id)
         .gte('created_at', lastYearStart)
         .lte('created_at', lastYearEnd);
 
-      const lastYearIncome = lastYearIncomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
-      const lastYearExpense = lastYearExpenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+      const lastYearIncome = lastYearIncomes?.reduce((sum, income) => sum + (income.payment || 0), 0) || 0;
+      const lastYearExpense = lastYearExpenses?.reduce((sum, expense) => sum + (expense.cost || 0), 0) || 0;
       const lastYearProfit = lastYearIncome - lastYearExpense;
 
       const incomeChange = lastYearIncome > 0 ? ((totalIncome - lastYearIncome) / lastYearIncome * 100) : 0;

@@ -44,7 +44,7 @@ export default function MiniChartsPanel() {
 
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at, name, guest_count')
+        .select('payment, created_at, name, guest_count')
         .eq('user_id', user.id)
         .gte('created_at', sixMonthsAgo.toISOString());
 
@@ -53,7 +53,7 @@ export default function MiniChartsPanel() {
       // Fetch user's expenses for categorization
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
-        .select('amount, name, created_at, category')
+        .select('cost, name, created_at, category')
         .eq('user_id', user.id);
 
       if (expensesError) throw expensesError;
@@ -93,7 +93,7 @@ export default function MiniChartsPanel() {
       const date = new Date(income.created_at);
       const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
       if (monthlyData[monthKey]) {
-        monthlyData[monthKey].income += income.amount || 0;
+        monthlyData[monthKey].income += income.payment || 0;
       }
     });
 
@@ -128,7 +128,7 @@ export default function MiniChartsPanel() {
     // Group expenses by category
     expenses.forEach(expense => {
       const category = expense.category || 'Other';
-      categories[category] = (categories[category] || 0) + (expense.amount || 0);
+      categories[category] = (categories[category] || 0) + (expense.cost || 0);
     });
 
     return Object.entries(categories)

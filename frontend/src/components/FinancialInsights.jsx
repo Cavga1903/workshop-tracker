@@ -39,7 +39,7 @@ export default function FinancialInsights() {
       // Fetch user's incomes (each income represents a workshop/class)
       const { data: allIncomes, error: allIncomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at, name, platform, guest_count')
+        .select('payment, created_at, name, platform, guest_count')
         .eq('user_id', user.id);
 
       if (allIncomesError) throw allIncomesError;
@@ -61,7 +61,7 @@ export default function FinancialInsights() {
       // Fetch user's expenses
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
-        .select('amount, name, created_at')
+        .select('cost, name, created_at')
         .eq('user_id', user.id)
         .gte('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
 
@@ -86,9 +86,9 @@ export default function FinancialInsights() {
 
   const generateInsights = (data) => {
     const insights = [];
-    const currentMonthIncome = data.currentMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
-    const lastMonthIncome = data.lastMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
-    const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    const currentMonthIncome = data.currentMonthIncomes.reduce((sum, income) => sum + (income.payment || 0), 0);
+    const lastMonthIncome = data.lastMonthIncomes.reduce((sum, income) => sum + (income.payment || 0), 0);
+    const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.cost || 0), 0);
     const totalParticipants = data.allIncomes.reduce((sum, income) => sum + (income.guest_count || 0), 0);
     const totalWorkshops = data.allIncomes.length;
 

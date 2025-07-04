@@ -27,7 +27,7 @@ export default function Summary() {
       // Fetch user's income data
       const { data: incomes, error: incomeError } = await supabase
         .from('incomes')
-        .select('amount')
+        .select('payment')
         .eq('user_id', user.id);
 
       if (incomeError) throw incomeError;
@@ -35,14 +35,14 @@ export default function Summary() {
       // Fetch user's expense data
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
-        .select('amount')
+        .select('cost')
         .eq('user_id', user.id);
 
       if (expenseError) throw expenseError;
 
       // Calculate totals
-      const totalIncome = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
-      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+      const totalIncome = incomes?.reduce((sum, income) => sum + (income.payment || 0), 0) || 0;
+      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.cost || 0), 0) || 0;
       const totalProfit = totalIncome - totalExpenses;
 
       setSummary({

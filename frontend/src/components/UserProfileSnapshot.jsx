@@ -36,7 +36,7 @@ export default function UserProfileSnapshot() {
       // Fetch user's incomes (workshops and participants are derived from this)
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at, guest_count, platform')
+        .select('payment, created_at, guest_count, platform')
         .eq('user_id', user.id);
 
       if (incomesError) throw incomesError;
@@ -44,7 +44,7 @@ export default function UserProfileSnapshot() {
       // Calculate stats
       const totalWorkshops = incomes?.length || 0;
       const totalParticipants = incomes?.reduce((sum, income) => sum + (income.guest_count || 0), 0) || 0;
-      const totalRevenue = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
+      const totalRevenue = incomes?.reduce((sum, income) => sum + (income.payment || 0), 0) || 0;
 
       // Calculate favorite platform
       const platformCounts = {};

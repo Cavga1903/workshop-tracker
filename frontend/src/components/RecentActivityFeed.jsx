@@ -43,7 +43,7 @@ export default function RecentActivityFeed() {
       // Fetch user's recent incomes
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('id, amount, name, created_at, guest_count')
+        .select('id, payment, name, created_at, guest_count')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -53,7 +53,7 @@ export default function RecentActivityFeed() {
       // Fetch user's recent expenses
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
-        .select('id, amount, name, created_at')
+        .select('id, cost, name, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -70,7 +70,7 @@ export default function RecentActivityFeed() {
           type: 'income_added',
           title: 'Workshop income received',
           description: `${income.name} - ${income.guest_count} participants`,
-          amount: `$${income.amount}`,
+          amount: `$${income.payment}`,
           time: getTimeAgo(income.created_at),
           timestamp: new Date(income.created_at),
           icon: DollarSign,
@@ -85,7 +85,7 @@ export default function RecentActivityFeed() {
           type: 'expense_added',
           title: 'Expense added',
           description: expense.name,
-          amount: `$${expense.amount}`,
+          amount: `$${expense.cost}`,
           time: getTimeAgo(expense.created_at),
           timestamp: new Date(expense.created_at),
           icon: CreditCard,

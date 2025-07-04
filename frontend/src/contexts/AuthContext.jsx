@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import supabase from '../supabase/client';
-import { ALLOWED_EMAIL_DOMAIN, BRANDING_MESSAGES } from '../config/branding';
+import { BRANDING_MESSAGES } from '../config/branding';
+import { isAllowedEmail, logFailedDomainAttempt } from '../utils/isAllowedEmail';
 
 const AuthContext = createContext({});
 
@@ -12,9 +13,16 @@ const useAuth = () => {
   return context;
 };
 
-// Domain validation for company email
+// Domain validation for company emails (multiple domains supported)
 const validateEmailDomain = (email) => {
-  return email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
+  const isValid = isAllowedEmail(email);
+  
+  // Log failed attempts for debugging/analytics
+  if (!isValid && email) {
+    logFailedDomainAttempt(email);
+  }
+  
+  return isValid;
 };
 
 const AuthProvider = ({ children }) => {

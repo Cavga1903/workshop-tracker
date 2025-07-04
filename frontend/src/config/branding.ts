@@ -1,22 +1,21 @@
+import { getAllowedDomainsText, getExampleEmail } from '../utils/isAllowedEmail';
+
 export const COMPANY_NAME = "Kraft Universe";
 export const COMPANY_DOMAIN = "kraftuniverse.com";
 export const APP_NAME = "Workshop Tracker";
 
-// Email domain validation
-export const ALLOWED_EMAIL_DOMAIN = `@${COMPANY_DOMAIN}`;
-
-// Branding messages
+// Branding messages with dynamic domain support
 export const BRANDING_MESSAGES = {
   loginTitle: `${APP_NAME}`,
-  loginSubtitle: `Secure Login - ${COMPANY_DOMAIN} domain only`,
+  loginSubtitle: `Secure Login - Company domains only`,
   signupTitle: `Join ${COMPANY_NAME}`,
-  signupSubtitle: `Exclusive to ${COMPANY_DOMAIN} domain`,
+  signupSubtitle: `Exclusive to company domains`,
   forgotPasswordTitle: `${COMPANY_NAME} Account`,
-  forgotPasswordSubtitle: `Secure password reset for ${COMPANY_DOMAIN}`,
-  emailPlaceholder: `yourname@${COMPANY_DOMAIN}`,
-  emailValidationMessage: `Must be a @${COMPANY_DOMAIN} email address`,
-  authRestrictionMessage: `Only @${COMPANY_DOMAIN} email addresses are allowed`,
-  signupAuthRestrictionMessage: `Only @${COMPANY_DOMAIN} email addresses are allowed to register`,
+  forgotPasswordSubtitle: `Secure password reset for company domains`,
+  emailPlaceholder: getExampleEmail(),
+  emailValidationMessage: `Must be a company email (${getAllowedDomainsText()})`,
+  authRestrictionMessage: `Only company email addresses are allowed (${getAllowedDomainsText()})`,
+  signupAuthRestrictionMessage: `You must sign up with a company email (${getAllowedDomainsText()})`,
   copyright: `© 2024 ${COMPANY_NAME}. Secure authentication powered by Supabase.`,
   signupCopyright: `© 2024 ${COMPANY_NAME}. By signing up, you agree to our Terms of Service.`,
   forgotPasswordCopyright: `© 2024 ${COMPANY_NAME}. Secure password reset powered by Supabase.`,

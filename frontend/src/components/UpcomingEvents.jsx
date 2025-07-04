@@ -31,35 +31,78 @@ export default function UpcomingEvents() {
       setLoading(true);
       setError(null);
 
-      // Calculate date range: last 15 days to next 30 days
+      // Calculate date range: from today to next 30 days
       const now = new Date();
-      const startDate = new Date(now.getTime() - (15 * 24 * 60 * 60 * 1000)); // 15 days ago
+      const todayStr = now.toISOString().split('T')[0]; // Today in YYYY-MM-DD format
       const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
+      const endDateStr = endDate.toISOString().split('T')[0];
 
-      const { data, error } = await supabase
-        .from('incomes')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('date', startDate.toISOString())
-        .lte('date', endDate.toISOString())
+      // Fetch user's upcoming workshops
+      const { data: workshops, error: workshopsError } = await supabase
+        .from('workshops')
+        .select('id, title, date, platform, instructor_id')
+        .eq('instructor_id', user.id)
+        .gte('date', todayStr)
+        .lte('date', endDateStr)
         .order('date', { ascending: true });
 
-      if (error) throw error;
+      if (workshopsError) throw workshopsError;
+
+      // Fetch participants count for each workshop
+      const workshopIds = workshops?.map(w => w.id) || [];
+      let participantsData = [];
+      let incomesData = [];
+
+      if (workshopIds.length > 0) {
+        const { data: participants, error: participantsError } = await supabase
+          .from('participants')
+          .select('workshop_id')
+          .in('workshop_id', workshopIds);
+
+        if (participantsError) throw participantsError;
+        participantsData = participants || [];
+
+        // Fetch incomes for pricing information
+        const { data: incomes, error: incomesError } = await supabase
+          .from('incomes')
+          .select('workshop_id, amount')
+          .in('workshop_id', workshopIds);
+
+        if (incomesError) throw incomesError;
+        incomesData = incomes || [];
+      }
+
+      // Count participants per workshop
+      const participantCounts = {};
+      participantsData.forEach(participant => {
+        participantCounts[participant.workshop_id] = (participantCounts[participant.workshop_id] || 0) + 1;
+      });
+
+      // Calculate total income per workshop
+      const workshopIncomes = {};
+      incomesData.forEach(income => {
+        workshopIncomes[income.workshop_id] = (workshopIncomes[income.workshop_id] || 0) + (income.amount || 0);
+      });
 
       // Transform data for display
-      const transformedEvents = data.map(income => ({
-        id: income.id,
-        type: 'workshop',
-        title: income.name || 'Workshop',
-        date: income.date,
-        location: income.platform || 'TBD',
-        participants: income.guest_count || 0,
-        price: income.payment || 0,
-        eventType: income.type || 'Online',
-        status: getEventStatus(income.date, income.payment),
-        icon: Calendar,
-        color: getEventColor(income.date, income.payment)
-      }));
+      const transformedEvents = workshops?.map(workshop => {
+        const participantCount = participantCounts[workshop.id] || 0;
+        const totalIncome = workshopIncomes[workshop.id] || 0;
+        
+        return {
+          id: workshop.id,
+          type: 'workshop',
+          title: workshop.title || 'Workshop',
+          date: workshop.date,
+          location: workshop.platform || 'TBD',
+          participants: participantCount,
+          price: totalIncome,
+          eventType: workshop.platform === 'Zoom' ? 'Online' : 'In-person',
+          status: getEventStatus(workshop.date, totalIncome),
+          icon: Calendar,
+          color: getEventColor(workshop.date, totalIncome)
+        };
+      }) || [];
 
       setEvents(transformedEvents);
     } catch (err) {

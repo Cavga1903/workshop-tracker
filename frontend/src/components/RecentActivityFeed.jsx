@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card } from 'flowbite-react';
+import React, { useEffect, useState } from 'react';
+import { Card, Spinner } from 'flowbite-react';
 import { 
   Plus, 
   Edit, 
@@ -12,87 +12,174 @@ import {
   CheckCircle,
   ChevronRight
 } from 'lucide-react';
+import supabase from '../supabase/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function RecentActivityFeed() {
-  const activities = [
-    {
-      id: 1,
-      type: 'income_added',
-      title: 'Added income',
-      description: 'Terrarium Design Workshop - Evening Session',
-      amount: '$300',
-      time: '2 hours ago',
-      icon: Plus,
-      color: 'green'
-    },
-    {
-      id: 2,
-      type: 'expense_updated',
-      title: 'Updated expense',
-      description: 'Art supplies for candle making workshop',
-      amount: '$65',
-      time: '4 hours ago',
-      icon: Edit,
-      color: 'blue'
-    },
-    {
-      id: 3,
-      type: 'workshop_completed',
-      title: 'Workshop completed',
-      description: 'Botanical Wall Art Class - 18 participants',
-      time: '1 day ago',
-      icon: CheckCircle,
-      color: 'green'
-    },
-    {
-      id: 4,
-      type: 'payment_received',
-      title: 'Payment received',
-      description: 'Mosaic Magic Workshop - Group booking',
-      amount: '$480',
-      time: '1 day ago',
-      icon: DollarSign,
-      color: 'green'
-    },
-    {
-      id: 5,
-      type: 'expense_added',
-      title: 'Added expense',
-      description: 'Clay supplies for pottery workshop',
-      amount: '$85',
-      time: '2 days ago',
-      icon: CreditCard,
-      color: 'red'
-    },
-    {
-      id: 6,
-      type: 'workshop_scheduled',
-      title: 'Workshop scheduled',
-      description: 'Holiday Candle Making - December 22',
-      time: '2 days ago',
-      icon: Calendar,
-      color: 'purple'
-    },
-    {
-      id: 7,
-      type: 'participant_joined',
-      title: 'New participant',
-      description: 'Sarah Miller joined Terrarium Design class',
-      time: '3 days ago',
-      icon: Users,
-      color: 'blue'
-    },
-    {
-      id: 8,
-      type: 'expense_deleted',
-      title: 'Deleted expense',
-      description: 'Removed duplicate material cost entry',
-      amount: '$25',
-      time: '3 days ago',
-      icon: Trash2,
-      color: 'gray'
+  const { user } = useAuth();
+  const [activities, setActivities] = useState([]);
+  const [activityCounts, setActivityCounts] = useState({
+    incomes: 0,
+    expenses: 0,
+    workshops: 0,
+    participants: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchRecentActivities();
     }
-  ];
+  }, [user]);
+
+  const fetchRecentActivities = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch user's workshops first
+      const { data: workshops, error: workshopsError } = await supabase
+        .from('workshops')
+        .select('id, title, date, created_at')
+        .eq('instructor_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (workshopsError) throw workshopsError;
+
+      const workshopIds = workshops?.map(w => w.id) || [];
+
+      // Fetch recent incomes
+      const { data: incomes, error: incomesError } = await supabase
+        .from('incomes')
+        .select('id, amount, payer, created_at, workshop_id')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (incomesError) throw incomesError;
+
+      // Fetch recent expenses
+      const { data: expenses, error: expensesError } = await supabase
+        .from('expenses')
+        .select('id, amount, description, created_at, workshop_id')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (expensesError) throw expensesError;
+
+      // Fetch recent participants
+      const { data: participants, error: participantsError } = await supabase
+        .from('participants')
+        .select('id, name, email, created_at, workshop_id')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (participantsError) throw participantsError;
+
+      // Combine and process all activities
+      const allActivities = [];
+
+      // Process incomes
+      incomes?.forEach(income => {
+        const workshop = workshops?.find(w => w.id === income.workshop_id);
+        allActivities.push({
+          id: `income_${income.id}`,
+          type: 'income_added',
+          title: 'Payment received',
+          description: `${workshop?.title || 'Workshop'} - ${income.payer || 'Unknown payer'}`,
+          amount: `$${income.amount}`,
+          time: getTimeAgo(income.created_at),
+          timestamp: new Date(income.created_at),
+          icon: DollarSign,
+          color: 'green'
+        });
+      });
+
+      // Process expenses
+      expenses?.forEach(expense => {
+        const workshop = workshops?.find(w => w.id === expense.workshop_id);
+        allActivities.push({
+          id: `expense_${expense.id}`,
+          type: 'expense_added',
+          title: 'Added expense',
+          description: `${expense.description} - ${workshop?.title || 'Workshop'}`,
+          amount: `$${expense.amount}`,
+          time: getTimeAgo(expense.created_at),
+          timestamp: new Date(expense.created_at),
+          icon: CreditCard,
+          color: 'red'
+        });
+      });
+
+      // Process workshops
+      workshops?.forEach(workshop => {
+        allActivities.push({
+          id: `workshop_${workshop.id}`,
+          type: 'workshop_scheduled',
+          title: 'Workshop scheduled',
+          description: `${workshop.title} - ${new Date(workshop.date).toLocaleDateString()}`,
+          time: getTimeAgo(workshop.created_at),
+          timestamp: new Date(workshop.created_at),
+          icon: Calendar,
+          color: 'purple'
+        });
+      });
+
+      // Process participants
+      participants?.forEach(participant => {
+        const workshop = workshops?.find(w => w.id === participant.workshop_id);
+        allActivities.push({
+          id: `participant_${participant.id}`,
+          type: 'participant_joined',
+          title: 'New participant',
+          description: `${participant.name} joined ${workshop?.title || 'workshop'}`,
+          time: getTimeAgo(participant.created_at),
+          timestamp: new Date(participant.created_at),
+          icon: Users,
+          color: 'blue'
+        });
+      });
+
+      // Sort all activities by timestamp (newest first) and take top 10
+      const sortedActivities = allActivities
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10);
+
+      setActivities(sortedActivities);
+
+      // Set activity counts
+      setActivityCounts({
+        incomes: incomes?.length || 0,
+        expenses: expenses?.length || 0,
+        workshops: workshops?.length || 0,
+        participants: participants?.length || 0
+      });
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTimeAgo = (dateString) => {
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffInMinutes = Math.floor((now - past) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)} days ago`;
+    if (diffInMinutes < 43200) return `${Math.floor(diffInMinutes / 10080)} weeks ago`;
+    return `${Math.floor(diffInMinutes / 43200)} months ago`;
+  };
 
   const getColorClasses = (color) => {
     const colorMap = {
@@ -115,6 +202,36 @@ export default function RecentActivityFeed() {
     return 'text-gray-600 dark:text-gray-400';
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Recent Activity
+        </h3>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="flex justify-center p-8">
+            <Spinner size="lg" />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Recent Activity
+        </h3>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="p-4 text-red-800 bg-red-50 dark:bg-red-900 dark:text-red-100 rounded-lg">
+            Error loading activities: {error}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -128,52 +245,64 @@ export default function RecentActivityFeed() {
       </div>
 
       <Card className="hover:shadow-lg transition-shadow duration-200">
-        <div className="space-y-4">
-          {activities.map((activity, index) => (
-            <div 
-              key={activity.id} 
-              className={`flex items-start space-x-4 ${
-                index !== activities.length - 1 ? 'pb-4 border-b border-gray-100 dark:border-gray-700' : ''
-              }`}
-            >
-              {/* Timeline Icon */}
-              <div className="relative">
-                <div className={`p-2 rounded-full ${getColorClasses(activity.color)}`}>
-                  <activity.icon className="h-4 w-4" />
+        {activities.length > 0 ? (
+          <div className="space-y-4">
+            {activities.map((activity, index) => (
+              <div 
+                key={activity.id} 
+                className={`flex items-start space-x-4 ${
+                  index !== activities.length - 1 ? 'pb-4 border-b border-gray-100 dark:border-gray-700' : ''
+                }`}
+              >
+                {/* Timeline Icon */}
+                <div className="relative">
+                  <div className={`p-2 rounded-full ${getColorClasses(activity.color)}`}>
+                    <activity.icon className="h-4 w-4" />
+                  </div>
+                  {index !== activities.length - 1 && (
+                    <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-px h-6 bg-gray-200 dark:bg-gray-700" />
+                  )}
                 </div>
-                {index !== activities.length - 1 && (
-                  <div className="absolute top-8 left-1/2 transform -translate-x-1/2 w-px h-6 bg-gray-200 dark:bg-gray-700" />
-                )}
-              </div>
 
-              {/* Activity Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        {activity.title}
-                      </h4>
-                      {activity.amount && (
-                        <span className={`text-sm font-semibold ${getAmountColor(activity.type)}`}>
-                          {activity.amount}
-                        </span>
-                      )}
+                {/* Activity Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                          {activity.title}
+                        </h4>
+                        {activity.amount && (
+                          <span className={`text-sm font-semibold ${getAmountColor(activity.type)}`}>
+                            {activity.amount}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {activity.description}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {activity.description}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center text-xs text-gray-400 dark:text-gray-500">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {activity.time}
+                    
+                    <div className="flex items-center text-xs text-gray-400 dark:text-gray-500">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {activity.time}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No recent activity
+            </h4>
+            <p className="text-gray-500 dark:text-gray-400">
+              Start adding workshops, income, and expenses to see activity here
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* Activity Summary */}
@@ -181,10 +310,10 @@ export default function RecentActivityFeed() {
         <Card className="text-center">
           <div className="p-3">
             <div className="text-lg font-bold text-green-600 dark:text-green-400">
-              5
+              {activityCounts.incomes}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Income Added
+              Recent Income
             </div>
           </div>
         </Card>
@@ -192,10 +321,10 @@ export default function RecentActivityFeed() {
         <Card className="text-center">
           <div className="p-3">
             <div className="text-lg font-bold text-red-600 dark:text-red-400">
-              3
+              {activityCounts.expenses}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Expenses Added
+              Recent Expenses
             </div>
           </div>
         </Card>
@@ -203,10 +332,10 @@ export default function RecentActivityFeed() {
         <Card className="text-center">
           <div className="p-3">
             <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
-              2
+              {activityCounts.workshops}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              Workshops Scheduled
+              Recent Workshops
             </div>
           </div>
         </Card>
@@ -214,7 +343,7 @@ export default function RecentActivityFeed() {
         <Card className="text-center">
           <div className="p-3">
             <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
-              12
+              {activityCounts.participants}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
               New Participants

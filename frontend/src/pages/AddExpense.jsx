@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Label, TextInput, Select, Button, Alert, Card } from 'flowbite-react';
+import React, { useState, useEffect } from 'react';
+import { Label, TextInput, Select, Button, Alert, Card, Spinner } from 'flowbite-react';
 import { HiCurrencyDollar, HiUser, HiCalendar, HiTag, HiCollection } from 'react-icons/hi';
+import { Users, CheckCircle, AlertCircle } from 'lucide-react';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -25,11 +26,44 @@ const categories = [
 ];
 
 export default function AddExpense() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [form, setForm] = useState(initialState);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  useEffect(() => {
+    // Pre-select current user when users are loaded
+    if (users.length > 0 && user && !form.whoPaid) {
+      const currentUser = users.find(u => u.id === user.id);
+      if (currentUser) {
+        setForm(prev => ({ ...prev, whoPaid: currentUser.full_name }));
+      }
+    }
+  }, [users, user, form.whoPaid]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url')
+        .order('full_name');
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError('Failed to load users');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -71,22 +105,28 @@ export default function AddExpense() {
     }
   };
 
+  const getCurrentUserName = () => {
+    if (profile?.full_name) return profile.full_name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'Current User';
+  };
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-gray-900">Add New Expense</h2>
-        <p className="mt-2 text-gray-600">Record a new expense for your workshop</p>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Add New Expense</h2>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">Record a new expense for your workshop</p>
       </div>
 
       {success && (
-        <Alert color="success" onDismiss={() => setSuccess(false)}>
-          Expense added successfully!
+        <Alert color="success" onDismiss={() => setSuccess(false)} icon={CheckCircle}>
+          <span className="font-medium">Success!</span> Expense added successfully!
         </Alert>
       )}
 
       {error && (
-        <Alert color="failure" onDismiss={() => setError(null)}>
-          {error}
+        <Alert color="failure" onDismiss={() => setError(null)} icon={AlertCircle}>
+          <span className="font-medium">Error:</span> {error}
         </Alert>
       )}
 
@@ -94,7 +134,7 @@ export default function AddExpense() {
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="month" value="Month" />
+              <Label htmlFor="month" value="Month *" className="text-sm font-medium" />
               <Select 
                 id="month" 
                 name="month" 
@@ -111,7 +151,7 @@ export default function AddExpense() {
             </div>
 
             <div>
-              <Label htmlFor="name" value="Expense Name" />
+              <Label htmlFor="name" value="Expense Name *" className="text-sm font-medium" />
               <TextInput 
                 id="name" 
                 name="name" 
@@ -124,7 +164,7 @@ export default function AddExpense() {
             </div>
 
             <div>
-              <Label htmlFor="cost" value="Cost" />
+              <Label htmlFor="cost" value="Cost *" className="text-sm font-medium" />
               <TextInput 
                 id="cost" 
                 name="cost" 
@@ -140,20 +180,49 @@ export default function AddExpense() {
             </div>
 
             <div>
-              <Label htmlFor="whoPaid" value="Who Paid" />
-              <TextInput 
-                id="whoPaid" 
-                name="whoPaid" 
-                icon={HiUser}
-                placeholder="Enter payer's name"
-                value={form.whoPaid} 
-                onChange={handleChange} 
-                required 
-              />
+              <Label htmlFor="whoPaid" value="Who Paid *" className="text-sm font-medium" />
+              <div className="relative">
+                <Select 
+                  id="whoPaid" 
+                  name="whoPaid" 
+                  value={form.whoPaid} 
+                  onChange={handleChange} 
+                  required
+                  disabled={loadingUsers}
+                  icon={Users}
+                  className="pr-10"
+                >
+                  <option value="">
+                    {loadingUsers ? 'Loading users...' : 'Select who paid'}
+                  </option>
+                  {users.map((userItem) => {
+                    const isCurrentUser = userItem.id === user?.id;
+                    return (
+                      <option 
+                        key={userItem.id} 
+                        value={userItem.full_name}
+                        disabled={!isCurrentUser}
+                        className={isCurrentUser ? 'font-medium' : 'text-gray-400'}
+                      >
+                        {userItem.full_name || userItem.email.split('@')[0]}
+                        {isCurrentUser ? ' (You)' : ' (Not selectable)'}
+                      </option>
+                    );
+                  })}
+                </Select>
+                {loadingUsers && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Spinner size="sm" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                You can only select yourself as the payer
+              </p>
             </div>
 
             <div className="md:col-span-2">
-              <Label htmlFor="category" value="Category" />
+              <Label htmlFor="category" value="Category *" className="text-sm font-medium" />
               <Select 
                 id="category" 
                 name="category" 
@@ -170,23 +239,34 @@ export default function AddExpense() {
             </div>
           </div>
 
-          <Card className="bg-gray-50 dark:bg-gray-800">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Total Cost</p>
-                <p className="text-lg font-semibold text-red-600">
+          {/* Preview Card */}
+          <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                  <HiCurrencyDollar className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                    Expense Preview
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.name || 'Expense Name'} • {form.category || 'Category'}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-bold text-red-600 dark:text-red-400">
                   ${(Number(form.cost) || 0).toFixed(2)}
                 </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Expense Impact</p>
-                <p className="text-lg font-semibold text-red-600">
-                  -${(Number(form.cost) || 0).toFixed(2)}
+                <p className="text-xs text-red-500 dark:text-red-500">
+                  Paid by: {form.whoPaid || getCurrentUserName()}
                 </p>
               </div>
             </div>
           </Card>
 
+          {/* Action Buttons */}
           <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="submit"
@@ -194,12 +274,30 @@ export default function AddExpense() {
               gradientDuoTone="redToOrange"
               className="w-full md:w-auto"
               isProcessing={loading}
-              disabled={loading}
+              disabled={loading || loadingUsers}
             >
               {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>
           </div>
         </form>
+      </Card>
+
+      {/* Help Section */}
+      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <div className="flex items-start space-x-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+            <HiUser className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+              About "Who Paid"
+            </h3>
+            <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+              For security reasons, you can only record expenses that you paid for. 
+              Other users in the system are visible but cannot be selected as payers.
+            </p>
+          </div>
+        </div>
       </Card>
     </div>
   );

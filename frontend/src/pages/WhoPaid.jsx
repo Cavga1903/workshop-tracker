@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Button, Alert, Table, Badge, TextInput, Select, Spinner } from 'flowbite-react';
+import { Card, Button, Alert, Table, Badge, TextInput, Select, Spinner, Dropdown } from 'flowbite-react';
 import { 
   PieChart, 
   Pie, 
@@ -27,9 +27,14 @@ import {
   HiCash,
   HiClock,
   HiChartPie,
-  HiChartBar
+  HiChartBar,
+  HiChevronDown
 } from 'react-icons/hi';
-import { Crown, TrendingUp, Calendar, DollarSign } from 'lucide-react';
+import { Crown, TrendingUp, Calendar, DollarSign, FileText, Download, FileSpreadsheet, FileJson, File } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Document, Packer, Paragraph, Table as DocxTable, TableRow, TableCell, WidthType } from 'docx';
+import { saveAs } from 'file-saver';
+import toast, { Toaster } from 'react-hot-toast';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -183,29 +188,240 @@ export default function WhoPaid() {
     }));
   };
 
-  const handleExport = () => {
-    if (!processedData) return;
+  // Check if user has export permissions
+  const canExport = () => {
+    const userRole = user?.user_metadata?.role || 'user';
+    return ['admin', 'analyst'].includes(userRole) || true; // Allow all for now, can be restricted later
+  };
 
-    const csvData = processedData.users.map(user => ({
+  // Get export data with metadata
+  const getExportData = () => {
+    if (!processedData) return null;
+
+    const timestamp = new Date().toISOString();
+    const dateStr = new Date().toISOString().split('T')[0];
+    
+    const summary = {
+      exportTimestamp: timestamp,
+      exportDate: dateStr,
+      filters: {
+        dateRange: dateRange.start || dateRange.end ? 
+          `${dateRange.start || 'All'} to ${dateRange.end || 'All'}` : 'All dates',
+        searchTerm: searchTerm || 'None',
+        minPayment: minPayment || 'None'
+      },
+      totals: {
+        totalPaid: processedData.totalAmount,
+        totalPayments: processedData.totalPayments,
+        contributors: processedData.users.length,
+        avgPayment: processedData.totalAmount / processedData.totalPayments
+      }
+    };
+
+    const contributorsData = processedData.users.map(user => ({
       Name: user.name,
       'Total Paid': user.totalPaid,
       'Payment Count': user.paymentCount,
-      'Average Payment': user.avgPayment.toFixed(2),
+      'Average Payment': user.avgPayment,
       'Last Payment': user.lastPayment ? new Date(user.lastPayment).toLocaleDateString() : 'N/A'
     }));
 
-    const csv = [
-      Object.keys(csvData[0]).join(','),
-      ...csvData.map(row => Object.values(row).join(','))
-    ].join('\n');
+    const topContributor = processedData.topContributors[0] || null;
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `who-paid-breakdown-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    return {
+      summary,
+      contributorsData,
+      topContributor,
+      recentPayments: processedData.recentPayments.slice(0, 5),
+      timestamp,
+      dateStr
+    };
+  };
+
+  // Export as CSV
+  const exportAsCSV = () => {
+    try {
+      const data = getExportData();
+      if (!data) return;
+
+      const headers = ['Name', 'Total Paid', 'Payment Count', 'Average Payment', 'Last Payment'];
+      const rows = data.contributorsData.map(user => [
+        user.Name,
+        user['Total Paid'],
+        user['Payment Count'],
+        user['Average Payment'].toFixed(2),
+        user['Last Payment']
+      ]);
+
+      const csvContent = [
+        `# Who Paid Breakdown Report - ${data.dateStr}`,
+        `# Export Time: ${data.timestamp}`,
+        `# Filters: ${data.summary.filters.dateRange}, Search: ${data.summary.filters.searchTerm}`,
+        `# Total Amount: $${data.summary.totals.totalPaid.toFixed(2)}, Contributors: ${data.summary.totals.contributors}`,
+        '',
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      saveAs(blob, `who-paid-breakdown-${data.dateStr}.csv`);
+      toast.success('Exported as CSV successfully!');
+    } catch (error) {
+      toast.error('Export failed. Please try again.');
+      console.error('CSV export error:', error);
+    }
+  };
+
+  // Export as Excel
+  const exportAsExcel = () => {
+    try {
+      const data = getExportData();
+      if (!data) return;
+
+      const wb = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ['Who Paid Breakdown Report'],
+        ['Export Date', data.dateStr],
+        ['Export Time', data.timestamp],
+        [''],
+        ['Summary'],
+        ['Total Paid', `$${data.summary.totals.totalPaid.toFixed(2)}`],
+        ['Total Payments', data.summary.totals.totalPayments],
+        ['Contributors', data.summary.totals.contributors],
+        ['Average Payment', `$${data.summary.totals.avgPayment.toFixed(2)}`],
+        [''],
+        ['Filters Applied'],
+        ['Date Range', data.summary.filters.dateRange],
+        ['Search Term', data.summary.filters.searchTerm],
+        ['Min Payment', data.summary.filters.minPayment],
+      ];
+      
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+      // Contributors sheet
+      const contributorsWs = XLSX.utils.json_to_sheet(data.contributorsData);
+      XLSX.utils.book_append_sheet(wb, contributorsWs, 'Contributors');
+
+      // Recent payments sheet
+      const recentPaymentsData = data.recentPayments.map(payment => ({
+        'Who Paid': payment.who_paid,
+        'Amount': payment.cost,
+        'Description': payment.name,
+        'Category': payment.category,
+        'Date': new Date(payment.created_at).toLocaleDateString()
+      }));
+      const recentWs = XLSX.utils.json_to_sheet(recentPaymentsData);
+      XLSX.utils.book_append_sheet(wb, recentWs, 'Recent Payments');
+
+      XLSX.writeFile(wb, `who-paid-breakdown-${data.dateStr}.xlsx`);
+      toast.success('Exported as Excel successfully!');
+    } catch (error) {
+      toast.error('Export failed. Please try again.');
+      console.error('Excel export error:', error);
+    }
+  };
+
+  // Export as JSON
+  const exportAsJSON = () => {
+    try {
+      const data = getExportData();
+      if (!data) return;
+
+      const jsonData = {
+        reportTitle: 'Who Paid Breakdown Report',
+        exportInfo: data.summary,
+        contributors: data.contributorsData,
+        topContributor: data.topContributor,
+        recentPayments: data.recentPayments,
+        chartData: {
+          pieChart: processedData.pieChartData,
+          monthlyData: processedData.monthlyData
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(jsonData, null, 2)], { 
+        type: 'application/json;charset=utf-8;' 
+      });
+      saveAs(blob, `who-paid-breakdown-${data.dateStr}.json`);
+      toast.success('Exported as JSON successfully!');
+    } catch (error) {
+      toast.error('Export failed. Please try again.');
+      console.error('JSON export error:', error);
+    }
+  };
+
+
+
+  // Export as Word
+  const exportAsWord = async () => {
+    try {
+      const data = getExportData();
+      if (!data) return;
+
+      const doc = new Document({
+        sections: [{
+          children: [
+            new Paragraph({
+              text: 'Who Paid Breakdown Report',
+              heading: 'Title'
+            }),
+            new Paragraph({
+              text: `Export Date: ${data.dateStr}`
+            }),
+            new Paragraph({
+              text: `Total Amount: $${data.summary.totals.totalPaid.toFixed(2)}`
+            }),
+            new Paragraph({
+              text: `Contributors: ${data.summary.totals.contributors}`
+            }),
+            new Paragraph({
+              text: `Total Payments: ${data.summary.totals.totalPayments}`
+            }),
+            new Paragraph({
+              text: '',
+            }),
+            new DocxTable({
+              width: {
+                size: 100,
+                type: WidthType.PERCENTAGE,
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({ children: [new Paragraph('Name')] }),
+                    new TableCell({ children: [new Paragraph('Total Paid')] }),
+                    new TableCell({ children: [new Paragraph('Payments')] }),
+                    new TableCell({ children: [new Paragraph('Avg Payment')] }),
+                    new TableCell({ children: [new Paragraph('Last Payment')] }),
+                  ],
+                }),
+                ...data.contributorsData.map(user => 
+                  new TableRow({
+                    children: [
+                      new TableCell({ children: [new Paragraph(user.Name)] }),
+                      new TableCell({ children: [new Paragraph(`$${user['Total Paid'].toFixed(2)}`)] }),
+                      new TableCell({ children: [new Paragraph(user['Payment Count'].toString())] }),
+                      new TableCell({ children: [new Paragraph(`$${user['Average Payment'].toFixed(2)}`)] }),
+                      new TableCell({ children: [new Paragraph(user['Last Payment'])] }),
+                    ],
+                  })
+                ),
+              ],
+            }),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `who-paid-breakdown-${data.dateStr}.docx`);
+      toast.success('Exported as Word document successfully!');
+    } catch (error) {
+      toast.error('Export failed. Please try again.');
+      console.error('Word export error:', error);
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -303,10 +519,60 @@ export default function WhoPaid() {
             <HiRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-          <Button onClick={handleExport} gradientDuoTone="purpleToBlue" size="sm">
-            <HiDownload className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
+          
+          {/* Export Dropdown */}
+          <Dropdown 
+            label=""
+            dismissOnClick={true}
+            renderTrigger={() => (
+              <Button 
+                gradientDuoTone="purpleToBlue" 
+                size="sm"
+                disabled={!canExport()}
+                className="flex items-center"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export
+                <HiChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          >
+            <div className="py-1">
+              <Dropdown.Header>
+                <span className="block text-sm font-medium text-gray-900 dark:text-white">
+                  Choose export format:
+                </span>
+              </Dropdown.Header>
+              
+              <Dropdown.Item onClick={exportAsCSV} className="flex items-center">
+                <FileText className="mr-2 h-4 w-4 text-green-500" />
+                Export as CSV
+              </Dropdown.Item>
+              
+              <Dropdown.Item onClick={exportAsExcel} className="flex items-center">
+                <FileSpreadsheet className="mr-2 h-4 w-4 text-blue-500" />
+                Export as Excel (.xlsx)
+              </Dropdown.Item>
+              
+              <Dropdown.Item onClick={exportAsJSON} className="flex items-center">
+                <FileJson className="mr-2 h-4 w-4 text-purple-500" />
+                Export as JSON
+              </Dropdown.Item>
+              
+              <Dropdown.Item onClick={exportAsWord} className="flex items-center">
+                <File className="mr-2 h-4 w-4 text-indigo-500" />
+                Export as Word (.docx)
+              </Dropdown.Item>
+              
+              {!canExport() && (
+                <Dropdown.Header>
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    Export permissions required
+                  </span>
+                </Dropdown.Header>
+              )}
+            </div>
+          </Dropdown>
         </div>
       </div>
 
@@ -704,6 +970,28 @@ export default function WhoPaid() {
           ))}
         </div>
       </Card>
+
+      {/* Toast Notifications */}
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            style: {
+              background: '#10B981',
+            },
+          },
+          error: {
+            style: {
+              background: '#EF4444',
+            },
+          },
+        }}
+      />
     </div>
   );
 } 

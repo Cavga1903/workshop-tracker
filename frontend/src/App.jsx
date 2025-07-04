@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Flowbite } from 'flowbite-react';
 
 import { AuthProvider } from './contexts/AuthContext';
@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 // Auth pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Profile from './pages/Profile';
 
 // Protected pages
@@ -21,20 +22,25 @@ import CategoryBreakdown from './pages/CategoryBreakdown';
 import ClassIncomeBreakdown from './pages/ClassIncomeBreakdown';
 import MonthlyTrend from './pages/MonthlyTrend';
 
-
-
 function AppContent() {
+  const location = useLocation();
+  
+  // Hide navbar on authentication pages
+  const authPages = ['/login', '/signup', '/forgot-password'];
+  const isAuthPage = authPages.includes(location.pathname);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Navbar />
+      {!isAuthPage && <Navbar />}
 
       {/* Main Content */}
-      <div className="pt-20 pb-8 px-4">
+      <div className={`${!isAuthPage ? 'pt-20' : ''} pb-8 px-4`}>
         <div className="max-w-7xl mx-auto">
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
             {/* Protected routes */}
             <Route path="/" element={

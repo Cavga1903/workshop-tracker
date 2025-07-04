@@ -24,25 +24,35 @@ export default function Summary() {
     setLoading(true);
     setError(null);
     try {
+      // Fetch user's workshops first
+      const { data: workshops, error: workshopsError } = await supabase
+        .from('workshops')
+        .select('id')
+        .eq('instructor_id', user.id);
+
+      if (workshopsError) throw workshopsError;
+
+      const workshopIds = workshops?.map(w => w.id) || [];
+
       // Fetch user's income data
       const { data: incomes, error: incomeError } = await supabase
         .from('incomes')
-        .select('profit, payment, total_cost')
-        .eq('user_id', user.id);
+        .select('amount')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
 
       if (incomeError) throw incomeError;
 
       // Fetch user's expense data
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
-        .select('cost')
-        .eq('user_id', user.id);
+        .select('amount')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
 
       if (expenseError) throw expenseError;
 
       // Calculate totals
-      const totalIncome = incomes?.reduce((sum, income) => sum + (income.payment || 0), 0) || 0;
-      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.cost || 0), 0) || 0;
+      const totalIncome = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
+      const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
       const totalProfit = totalIncome - totalExpenses;
 
       setSummary({

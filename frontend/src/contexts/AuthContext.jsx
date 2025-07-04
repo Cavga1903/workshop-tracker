@@ -11,6 +11,12 @@ const useAuth = () => {
   return context;
 };
 
+// Domain validation for kraftstories.com
+const validateEmailDomain = (email) => {
+  const allowedDomain = '@kraftstories.com';
+  return email.toLowerCase().endsWith(allowedDomain);
+};
+
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -69,9 +75,25 @@ const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, userData = {}) => {
     try {
+      // Validate email domain
+      if (!validateEmailDomain(email)) {
+        throw new Error('Only @kraftstories.com email addresses are allowed to register.');
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        throw new Error('Password must be at least 8 characters long.');
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: userData.fullName || '',
+            role: 'user'
+          }
+        }
       });
 
       if (error) throw error;
@@ -87,12 +109,16 @@ const AuthProvider = ({ children }) => {
               username: userData.username || email.split('@')[0],
               avatar_url: userData.avatarUrl || '',
               phone_number: userData.phoneNumber || '',
-              role: 'user'
+              role: 'user',
+              email: email,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             }
           ]);
 
         if (profileError) {
           console.error('Error creating profile:', profileError);
+          // Don't throw here as the user was created successfully
         }
       }
 
@@ -104,11 +130,24 @@ const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
+      // Validate email domain before attempting login
+      if (!validateEmailDomain(email)) {
+        throw new Error('Only @kraftstories.com email addresses are allowed.');
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      return { data, error };
+
+      if (error) throw error;
+
+      // Fetch profile after successful login
+      if (data.user) {
+        await fetchProfile(data.user.id);
+      }
+
+      return { data, error: null };
     } catch (error) {
       return { data: null, error };
     }
@@ -131,9 +170,14 @@ const AuthProvider = ({ children }) => {
     try {
       if (!user) throw new Error('No user logged in');
 
+      const updatedData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(updatedData)
         .eq('id', user.id)
         .select()
         .single();
@@ -141,6 +185,43 @@ const AuthProvider = ({ children }) => {
       if (error) throw error;
 
       setProfile(data);
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      // Validate email domain
+      if (!validateEmailDomain(email)) {
+        throw new Error('Only @kraftstories.com email addresses are allowed.');
+      }
+
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  };
+
+  const updatePassword = async (newPassword) => {
+    try {
+      if (newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters long.');
+      }
+
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -155,7 +236,10 @@ const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     updateProfile,
-    fetchProfile
+    fetchProfile,
+    resetPassword,
+    updatePassword,
+    validateEmailDomain
   };
 
   return (

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card } from 'flowbite-react';
+import React, { useEffect, useState } from 'react';
+import { Card, Spinner } from 'flowbite-react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -10,70 +10,246 @@ import {
   Star,
   Info
 } from 'lucide-react';
+import supabase from '../supabase/client';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function FinancialInsights() {
-  const insights = [
-    {
-      id: 1,
-      type: 'positive',
-      title: 'Income Growth',
-      message: 'Your workshop income increased by 18% compared to last month',
-      emoji: '🚀',
-      icon: TrendingUp,
-      color: 'green',
-      action: 'Keep up the great work!'
-    },
-    {
-      id: 2,
-      type: 'warning',
-      title: 'High Supply Costs',
-      message: 'Spending on art supplies and materials is unusually high this month',
-      emoji: '🎨',
-      icon: AlertTriangle,
-      color: 'orange',
-      action: 'Review material costs'
-    },
-    {
-      id: 3,
-      type: 'suggestion',
-      title: 'Popular Workshop Alert',
-      message: 'Terrarium workshops have 95% attendance - consider adding more sessions',
-      emoji: '🌿',
-      icon: Lightbulb,
-      color: 'blue',
-      action: 'Schedule more sessions'
-    },
-    {
-      id: 4,
-      type: 'achievement',
-      title: 'Milestone Reached',
-      message: 'Congratulations! You\'ve taught 1,000+ creative souls this year',
-      emoji: '🎉',
-      icon: Star,
-      color: 'purple',
-      action: 'Celebrate your success!'
-    },
-    {
-      id: 5,
-      type: 'info',
-      title: 'Seasonal Trend',
-      message: 'Holiday craft workshops typically generate 25% more revenue',
-      emoji: '🎄',
-      icon: Info,
-      color: 'indigo',
-      action: 'Plan holiday workshops'
-    },
-    {
-      id: 6,
-      type: 'suggestion',
-      title: 'Optimal Schedule',
-      message: 'Weekend workshops have the highest attendance - consider expanding weekend slots',
-      emoji: '📅',
-      icon: Target,
-      color: 'teal',
-      action: 'Update schedule'
+  const { user } = useAuth();
+  const [insights, setInsights] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchInsights();
     }
-  ];
+  }, [user]);
+
+  const fetchInsights = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const currentMonth = new Date();
+      const lastMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
+      const currentYear = new Date().getFullYear();
+
+      // Fetch user's workshops
+      const { data: workshops, error: workshopsError } = await supabase
+        .from('workshops')
+        .select('id, title, date, platform')
+        .eq('instructor_id', user.id);
+
+      if (workshopsError) throw workshopsError;
+
+      const workshopIds = workshops?.map(w => w.id) || [];
+
+      // Fetch current month income
+      const { data: currentMonthIncomes, error: currentIncomeError } = await supabase
+        .from('incomes')
+        .select('amount, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .gte('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+
+      if (currentIncomeError) throw currentIncomeError;
+
+      // Fetch last month income
+      const { data: lastMonthIncomes, error: lastIncomeError } = await supabase
+        .from('incomes')
+        .select('amount, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .gte('created_at', `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-01`)
+        .lt('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+
+      if (lastIncomeError) throw lastIncomeError;
+
+      // Fetch expenses
+      const { data: expenses, error: expenseError } = await supabase
+        .from('expenses')
+        .select('amount, description, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .gte('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+
+      if (expenseError) throw expenseError;
+
+      // Fetch participants
+      const { data: participants, error: participantError } = await supabase
+        .from('participants')
+        .select('id, workshop_id, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+
+      if (participantError) throw participantError;
+
+      // Calculate insights
+      const generatedInsights = generateInsights({
+        currentMonthIncomes: currentMonthIncomes || [],
+        lastMonthIncomes: lastMonthIncomes || [],
+        expenses: expenses || [],
+        participants: participants || [],
+        workshops: workshops || []
+      });
+
+      setInsights(generatedInsights);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateInsights = (data) => {
+    const insights = [];
+    const currentMonthIncome = data.currentMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
+    const lastMonthIncome = data.lastMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
+    const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+    const totalParticipants = data.participants.length;
+
+    // Income Growth/Decline Insight
+    if (lastMonthIncome > 0) {
+      const incomeChange = ((currentMonthIncome - lastMonthIncome) / lastMonthIncome) * 100;
+      if (incomeChange > 10) {
+        insights.push({
+          id: 1,
+          type: 'positive',
+          title: 'Income Growth',
+          message: `Your workshop income increased by ${incomeChange.toFixed(1)}% compared to last month`,
+          emoji: '🚀',
+          icon: TrendingUp,
+          color: 'green',
+          action: 'Keep up the great work!'
+        });
+      } else if (incomeChange < -10) {
+        insights.push({
+          id: 1,
+          type: 'warning',
+          title: 'Income Decline',
+          message: `Your workshop income decreased by ${Math.abs(incomeChange).toFixed(1)}% compared to last month`,
+          emoji: '📉',
+          icon: TrendingDown,
+          color: 'orange',
+          action: 'Review strategy'
+        });
+      }
+    }
+
+    // Expense Analysis
+    const avgMonthlyExpenses = totalExpenses; // This would be better with historical data
+    if (totalExpenses > 0 && currentMonthIncome > 0) {
+      const expenseRatio = (totalExpenses / currentMonthIncome) * 100;
+      if (expenseRatio > 50) {
+        insights.push({
+          id: 2,
+          type: 'warning',
+          title: 'High Expense Ratio',
+          message: `Expenses are ${expenseRatio.toFixed(1)}% of income this month`,
+          emoji: '💰',
+          icon: AlertTriangle,
+          color: 'orange',
+          action: 'Review costs'
+        });
+      }
+    }
+
+    // Workshop Popularity
+    const workshopParticipants = {};
+    data.participants.forEach(participant => {
+      workshopParticipants[participant.workshop_id] = (workshopParticipants[participant.workshop_id] || 0) + 1;
+    });
+
+    const mostPopularWorkshopId = Object.keys(workshopParticipants).reduce((a, b) => 
+      workshopParticipants[a] > workshopParticipants[b] ? a : b, null
+    );
+
+    const mostPopularWorkshop = data.workshops.find(w => w.id == mostPopularWorkshopId);
+    const popularWorkshopCount = workshopParticipants[mostPopularWorkshopId] || 0;
+
+    if (mostPopularWorkshop && popularWorkshopCount > 0) {
+      const attendanceRate = (popularWorkshopCount / data.workshops.length) * 100;
+      if (attendanceRate > 80) {
+        insights.push({
+          id: 3,
+          type: 'suggestion',
+          title: 'Popular Workshop Alert',
+          message: `${mostPopularWorkshop.title} has high attendance (${popularWorkshopCount} participants) - consider adding more sessions`,
+          emoji: '🌟',
+          icon: Lightbulb,
+          color: 'blue',
+          action: 'Schedule more sessions'
+        });
+      }
+    }
+
+    // Milestone Achievement
+    if (totalParticipants > 1000) {
+      insights.push({
+        id: 4,
+        type: 'achievement',
+        title: 'Milestone Reached',
+        message: `Congratulations! You've taught ${totalParticipants.toLocaleString()} creative souls`,
+        emoji: '🎉',
+        icon: Star,
+        color: 'purple',
+        action: 'Celebrate your success!'
+      });
+    } else if (totalParticipants > 500) {
+      insights.push({
+        id: 4,
+        type: 'achievement',
+        title: 'Great Progress',
+        message: `Amazing! You've reached ${totalParticipants} participants`,
+        emoji: '👏',
+        icon: Star,
+        color: 'purple',
+        action: 'Keep growing!'
+      });
+    }
+
+    // Platform Analysis
+    const platformCounts = {};
+    data.workshops.forEach(workshop => {
+      const platform = workshop.platform || 'Unknown';
+      platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+    });
+
+    const mostUsedPlatform = Object.keys(platformCounts).reduce((a, b) => 
+      platformCounts[a] > platformCounts[b] ? a : b, null
+    );
+
+    if (mostUsedPlatform && mostUsedPlatform !== 'Unknown') {
+      insights.push({
+        id: 5,
+        type: 'info',
+        title: 'Platform Preference',
+        message: `${mostUsedPlatform} is your most used platform with ${platformCounts[mostUsedPlatform]} workshops`,
+        emoji: '🖥️',
+        icon: Info,
+        color: 'indigo',
+        action: 'Optimize platform'
+      });
+    }
+
+    // Profit Margin Insight
+    if (currentMonthIncome > 0 && totalExpenses > 0) {
+      const profitMargin = ((currentMonthIncome - totalExpenses) / currentMonthIncome) * 100;
+      if (profitMargin > 70) {
+        insights.push({
+          id: 6,
+          type: 'positive',
+          title: 'Excellent Profit Margin',
+          message: `Your profit margin is ${profitMargin.toFixed(1)}% - excellent financial performance`,
+          emoji: '💚',
+          icon: Target,
+          color: 'green',
+          action: 'Maintain efficiency'
+        });
+      }
+    }
+
+    return insights.slice(0, 6); // Return max 6 insights
+  };
 
   const getColorClasses = (color, type) => {
     const colorMap = {
@@ -122,6 +298,42 @@ export default function FinancialInsights() {
     return iconMap[type] || Info;
   };
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            AI Financial Insights
+          </h3>
+        </div>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="flex justify-center p-8">
+            <Spinner size="lg" />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2">
+          <Zap className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            AI Financial Insights
+          </h3>
+        </div>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="p-4 text-red-800 bg-red-50 dark:bg-red-900 dark:text-red-100 rounded-lg">
+            Error loading insights: {error}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
@@ -131,47 +343,61 @@ export default function FinancialInsights() {
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {insights.map((insight) => {
-          const colors = getColorClasses(insight.color, insight.type);
-          const TypeIcon = getTypeIcon(insight.type);
-          
-          return (
-            <Card 
-              key={insight.id} 
-              className={`border-2 ${colors.bg} hover:shadow-lg transition-all duration-200 hover:scale-105`}
-            >
-              <div className="flex items-start space-x-3">
-                <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
-                  <TypeIcon className="h-4 w-4" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-2">
-                      <h4 className={`text-sm font-semibold ${colors.text}`}>
-                        {insight.title}
-                      </h4>
-                      <span className="text-lg">{insight.emoji}</span>
+      {insights.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {insights.map((insight) => {
+            const colors = getColorClasses(insight.color, insight.type);
+            const TypeIcon = getTypeIcon(insight.type);
+            
+            return (
+              <Card 
+                key={insight.id} 
+                className={`border-2 ${colors.bg} hover:shadow-lg transition-all duration-200 hover:scale-105`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className={`p-2 rounded-lg ${colors.icon} flex-shrink-0`}>
+                    <TypeIcon className="h-4 w-4" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-2">
+                        <h4 className={`text-sm font-semibold ${colors.text}`}>
+                          {insight.title}
+                        </h4>
+                        <span className="text-lg">{insight.emoji}</span>
+                      </div>
+                    </div>
+                    
+                    <p className={`text-sm ${colors.text} mt-1 leading-relaxed`}>
+                      {insight.message}
+                    </p>
+                    
+                    <div className="mt-3">
+                      <button className={`text-xs font-medium px-3 py-1 rounded-full border 
+                        ${colors.text} hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200`}>
+                        {insight.action}
+                      </button>
                     </div>
                   </div>
-                  
-                  <p className={`text-sm ${colors.text} mt-1 leading-relaxed`}>
-                    {insight.message}
-                  </p>
-                  
-                  <div className="mt-3">
-                    <button className={`text-xs font-medium px-3 py-1 rounded-full border 
-                      ${colors.text} hover:bg-white dark:hover:bg-gray-800 transition-colors duration-200`}>
-                      {insight.action}
-                    </button>
-                  </div>
                 </div>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="text-center py-8">
+            <Lightbulb className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No insights available yet
+            </h4>
+            <p className="text-gray-500 dark:text-gray-400">
+              Start adding workshops and income data to see AI-powered insights
+            </p>
+          </div>
+        </Card>
+      )}
 
       {/* AI Powered Badge */}
       <div className="flex items-center justify-center mt-6">

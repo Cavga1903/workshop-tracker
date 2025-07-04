@@ -1,5 +1,5 @@
-import React from 'react';
-import { Card } from 'flowbite-react';
+import React, { useEffect, useState } from 'react';
+import { Card, Spinner } from 'flowbite-react';
 import { 
   User, 
   Calendar, 
@@ -12,28 +12,117 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import supabase from '../supabase/client';
 
 export default function UserProfileSnapshot() {
   const { user, profile } = useAuth();
+  const [userStats, setUserStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock data for user stats
-  const userStats = {
-    totalWorkshops: 89,
-    totalParticipants: 1247,
-    totalRevenue: 45230,
-    averageRating: 4.8,
-    completionRate: 96,
-    lastLogin: '2 hours ago',
-    memberSince: 'January 2023',
-    favoriteLocation: 'Zoom',
-    responseTime: '< 1 hour'
+  useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch user's workshops
+      const { data: workshops, error: workshopsError } = await supabase
+        .from('workshops')
+        .select('id, title, date, platform')
+        .eq('instructor_id', user.id);
+
+      if (workshopsError) throw workshopsError;
+
+      const workshopIds = workshops?.map(w => w.id) || [];
+
+      // Fetch participants for all workshops
+      const { data: participants, error: participantsError } = await supabase
+        .from('participants')
+        .select('id, workshop_id, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+
+      if (participantsError) throw participantsError;
+
+      // Fetch incomes for revenue calculation
+      const { data: incomes, error: incomesError } = await supabase
+        .from('incomes')
+        .select('amount, created_at')
+        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+
+      if (incomesError) throw incomesError;
+
+      // Calculate stats
+      const totalWorkshops = workshops?.length || 0;
+      const totalParticipants = participants?.length || 0;
+      const totalRevenue = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
+
+      // Calculate favorite platform
+      const platformCounts = {};
+      workshops?.forEach(workshop => {
+        const platform = workshop.platform || 'Unknown';
+        platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+      });
+
+      const favoriteLocation = Object.keys(platformCounts).reduce((a, b) => 
+        platformCounts[a] > platformCounts[b] ? a : b, 'N/A'
+      );
+
+      // Calculate member since (user joined date)
+      const memberSince = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long'
+      }) : 'N/A';
+
+      // Calculate average rating (placeholder for now, as rating system not implemented)
+      const averageRating = 4.8; // This would come from a ratings table in a real implementation
+
+      setUserStats({
+        totalWorkshops,
+        totalParticipants,
+        totalRevenue,
+        averageRating,
+        completionRate: 96, // This would be calculated from actual completion data
+        lastLogin: '2 hours ago', // This would come from user session data
+        memberSince,
+        favoriteLocation,
+        responseTime: '< 1 hour' // This would be calculated from message response times
+      });
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const achievements = [
-    { name: 'Top Instructor', color: 'bg-yellow-100 text-yellow-800', icon: Award },
-    { name: '1000+ Students', color: 'bg-blue-100 text-blue-800', icon: Users },
-    { name: 'Perfect Rating', color: 'bg-green-100 text-green-800', icon: Award }
-  ];
+  // Calculate dynamic achievements based on real data
+  const getAchievements = () => {
+    if (!userStats) return [];
+
+    const achievements = [];
+
+    if (userStats.totalParticipants > 500) {
+      achievements.push({ name: 'Top Instructor', color: 'bg-yellow-100 text-yellow-800', icon: Award });
+    }
+
+    if (userStats.totalParticipants > 1000) {
+      achievements.push({ name: '1000+ Students', color: 'bg-blue-100 text-blue-800', icon: Users });
+    }
+
+    if (userStats.averageRating === 5.0) {
+      achievements.push({ name: 'Perfect Rating', color: 'bg-green-100 text-green-800', icon: Award });
+    }
+
+    return achievements;
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -42,6 +131,40 @@ export default function UserProfileSnapshot() {
       minimumFractionDigits: 0
     }).format(amount);
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Profile Overview
+        </h3>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="flex justify-center p-8">
+            <Spinner size="lg" />
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Profile Overview
+        </h3>
+        <Card className="hover:shadow-lg transition-shadow duration-200">
+          <div className="p-4 text-red-800 bg-red-50 dark:bg-red-900 dark:text-red-100 rounded-lg">
+            Error loading profile data: {error}
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!userStats) return null;
+
+  const achievements = getAchievements();
 
   return (
     <div className="space-y-4">

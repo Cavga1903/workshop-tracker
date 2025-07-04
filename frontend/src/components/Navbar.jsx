@@ -69,6 +69,7 @@ export default function Navbar() {
     { path: '/add-expense', name: 'Add Expense', icon: Plus },
     { path: '/incomes', name: 'Income Records', icon: DollarSign },
     { path: '/expenses', name: 'Expense Records', icon: CreditCard },
+    ...(profile?.role === 'admin' ? [{ path: '/admin/class-types', name: 'Manage Class Types', icon: Settings }] : []),
   ];
 
   const analyticsItems = [

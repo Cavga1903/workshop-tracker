@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Table, Modal, Label, TextInput, Alert, Spinner } from 'flowbite-react';
 import { HiPlus, HiPencil, HiTrash, HiExclamation } from 'react-icons/hi';
 import { CheckCircle, AlertCircle, Settings, DollarSign } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -37,7 +38,7 @@ export default function AdminClassTypes() {
       if (error) throw error;
       setClassTypes(data || []);
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export default function AdminClassTypes() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAdmin) {
-      setError('You do not have permission to perform this action');
+      toast.error('You do not have permission to perform this action');
       return;
     }
 
@@ -67,7 +68,7 @@ export default function AdminClassTypes() {
           .eq('id', editingType.id);
 
         if (error) throw error;
-        setSuccess('Class type updated successfully');
+        toast.success('Class type updated successfully');
       } else {
         // Create new class type
         const { error } = await supabase
@@ -75,7 +76,7 @@ export default function AdminClassTypes() {
           .insert([typeData]);
 
         if (error) throw error;
-        setSuccess('Class type created successfully');
+        toast.success('Class type created successfully');
       }
 
       // Reset form and close modal
@@ -83,11 +84,8 @@ export default function AdminClassTypes() {
       setEditingType(null);
       setShowModal(false);
       fetchClassTypes();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -95,7 +93,7 @@ export default function AdminClassTypes() {
 
   const handleEdit = (classType) => {
     if (!isAdmin) {
-      setError('You do not have permission to perform this action');
+      toast.error('You do not have permission to perform this action');
       return;
     }
     setEditingType(classType);
@@ -108,7 +106,7 @@ export default function AdminClassTypes() {
 
   const handleDelete = async (classType) => {
     if (!isAdmin) {
-      setError('You do not have permission to perform this action');
+      toast.error('You do not have permission to perform this action');
       return;
     }
 
@@ -123,14 +121,11 @@ export default function AdminClassTypes() {
 
       if (error) throw error;
       
-      setSuccess('Class type deleted successfully');
+      toast.success('Class type deleted successfully');
       setDeleteConfirm(null);
       fetchClassTypes();
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -138,7 +133,7 @@ export default function AdminClassTypes() {
 
   const handleNewType = () => {
     if (!isAdmin) {
-      setError('You do not have permission to perform this action');
+      toast.error('You do not have permission to perform this action');
       return;
     }
     setEditingType(null);
@@ -207,17 +202,7 @@ export default function AdminClassTypes() {
         </Button>
       </div>
 
-      {success && (
-        <Alert color="success" onDismiss={() => setSuccess(null)} icon={CheckCircle}>
-          <span className="font-medium">Success!</span> {success}
-        </Alert>
-      )}
 
-      {error && (
-        <Alert color="failure" onDismiss={() => setError(null)} icon={AlertCircle}>
-          <span className="font-medium">Error:</span> {error}
-        </Alert>
-      )}
 
       {/* Class Types Table */}
       <Card>
@@ -364,6 +349,29 @@ export default function AdminClassTypes() {
           </Button>
         </Modal.Footer>
       </Modal>
+      
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            iconTheme: {
+              primary: '#4ade80',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 } 

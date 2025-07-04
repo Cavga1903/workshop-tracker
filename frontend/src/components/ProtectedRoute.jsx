@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { Spinner } from 'flowbite-react';
 import { Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BRANDING_MESSAGES } from '../config/branding';
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -17,7 +18,7 @@ export default function ProtectedRoute({ children }) {
           </div>
           <Spinner size="xl" className="mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            KraftStories
+            {BRANDING_MESSAGES.protectedRouteTitle}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Verifying your authentication...

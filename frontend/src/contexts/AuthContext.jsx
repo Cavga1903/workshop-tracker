@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import supabase from '../supabase/client';
+import { ALLOWED_EMAIL_DOMAIN, BRANDING_MESSAGES } from '../config/branding';
 
 const AuthContext = createContext({});
 
@@ -11,10 +12,9 @@ const useAuth = () => {
   return context;
 };
 
-// Domain validation for kraftstories.com
+// Domain validation for company email
 const validateEmailDomain = (email) => {
-  const allowedDomain = '@kraftstories.com';
-  return email.toLowerCase().endsWith(allowedDomain);
+  return email.toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
 };
 
 const AuthProvider = ({ children }) => {
@@ -77,7 +77,7 @@ const AuthProvider = ({ children }) => {
     try {
       // Validate email domain
       if (!validateEmailDomain(email)) {
-        throw new Error('Only @kraftstories.com email addresses are allowed to register.');
+        throw new Error(BRANDING_MESSAGES.signupAuthRestrictionMessage);
       }
 
       // Validate password strength
@@ -132,7 +132,7 @@ const AuthProvider = ({ children }) => {
     try {
       // Validate email domain before attempting login
       if (!validateEmailDomain(email)) {
-        throw new Error('Only @kraftstories.com email addresses are allowed.');
+        throw new Error(BRANDING_MESSAGES.authRestrictionMessage);
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -195,7 +195,7 @@ const AuthProvider = ({ children }) => {
     try {
       // Validate email domain
       if (!validateEmailDomain(email)) {
-        throw new Error('Only @kraftstories.com email addresses are allowed.');
+        throw new Error(BRANDING_MESSAGES.authRestrictionMessage);
       }
 
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {

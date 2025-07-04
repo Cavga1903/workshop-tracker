@@ -18,6 +18,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BRANDING_MESSAGES } from '../config/branding';
 
 export default function Navbar() {
   const { user, profile, signOut } = useAuth();
@@ -69,6 +70,7 @@ export default function Navbar() {
     { path: '/add-expense', name: 'Add Expense', icon: Plus },
     { path: '/incomes', name: 'Income Records', icon: DollarSign },
     { path: '/expenses', name: 'Expense Records', icon: CreditCard },
+    { path: '/admin/class-types', name: 'Add Class Type', icon: Plus },
     ...(profile?.role === 'admin' ? [{ path: '/admin/class-types', name: 'Manage Class Types', icon: Settings }] : []),
   ];
 
@@ -114,7 +116,7 @@ export default function Navbar() {
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">Workshop Tracker</span>
+          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">{BRANDING_MESSAGES.navbarTitle}</span>
           <button
             onClick={() => setIsMobileMenuOpen(false)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -213,7 +215,7 @@ export default function Navbar() {
             <NavLink to="/" className="flex items-center space-x-2">
               <BarChart3 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                Workshop Tracker
+                {BRANDING_MESSAGES.navbarTitle}
               </span>
             </NavLink>
 

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Label, TextInput, Button, Alert, Avatar, Select } from 'flowbite-react';
-import { HiUser, HiMail, HiPhone, HiPhotograph, HiShieldCheck } from 'react-icons/hi';
+import { HiUser, HiMail, HiPhone, HiPhotograph, HiShieldCheck, HiLockClosed, HiEye, HiEyeOff } from 'react-icons/hi';
+import { Shield, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import supabase from '../supabase/client';
 
 const countryCodes = [
   { code: '+90', name: 'Turkey', flag: '🇹🇷' },
@@ -48,6 +50,19 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -106,6 +121,80 @@ export default function Profile() {
     }
     
     setLoading(false);
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+    if (passwordError) setPasswordError('');
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate password form
+    if (!passwordData.currentPassword) {
+      setPasswordError('Current password is required');
+      return;
+    }
+    
+    if (!passwordData.newPassword) {
+      setPasswordError('New password is required');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    setPasswordLoading(true);
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    try {
+      // First verify current password by attempting to sign in
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: passwordData.currentPassword
+      });
+      
+      if (verifyError) {
+        setPasswordError('Current password is incorrect');
+        return;
+      }
+      
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+      
+      if (updateError) {
+        setPasswordError(updateError.message);
+        return;
+      }
+      
+      setPasswordSuccess('Password updated successfully!');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      setTimeout(() => setPasswordSuccess(''), 3000);
+      
+    } catch (err) {
+      setPasswordError(err.message || 'Failed to update password');
+    } finally {
+      setPasswordLoading(false);
+    }
   };
 
   return (
@@ -274,6 +363,139 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      {/* Password Change Section */}
+      <Card>
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+            <Lock className="h-5 w-5 text-red-600 dark:text-red-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Change Password
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Update your account password for security
+            </p>
+          </div>
+        </div>
+
+        {passwordSuccess && (
+          <Alert color="success" onDismiss={() => setPasswordSuccess('')} className="mb-6">
+            {passwordSuccess}
+          </Alert>
+        )}
+
+        {passwordError && (
+          <Alert color="failure" onDismiss={() => setPasswordError('')} className="mb-6">
+            {passwordError}
+          </Alert>
+        )}
+
+        <form className="space-y-6" onSubmit={handlePasswordSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Current Password */}
+            <div>
+              <Label htmlFor="currentPassword" value="Current Password *" />
+              <div className="relative">
+                <TextInput
+                  id="currentPassword"
+                  name="currentPassword"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  icon={HiLockClosed}
+                  placeholder="Enter current password"
+                  value={passwordData.currentPassword}
+                  onChange={handlePasswordChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <Label htmlFor="newPassword" value="New Password *" />
+              <div className="relative">
+                <TextInput
+                  id="newPassword"
+                  name="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  icon={HiLockClosed}
+                  placeholder="Enter new password"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Must be at least 8 characters long
+              </p>
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <Label htmlFor="confirmPassword" value="Confirm New Password *" />
+              <div className="relative">
+                <TextInput
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  icon={HiLockClosed}
+                  placeholder="Confirm new password"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="submit"
+              size="lg"
+              gradientDuoTone="redToYellow"
+              className="w-full md:w-auto"
+              isProcessing={passwordLoading}
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? 'Updating Password...' : 'Update Password'}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 } 

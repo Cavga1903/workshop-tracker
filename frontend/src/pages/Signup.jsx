@@ -4,6 +4,7 @@ import { Card, Label, TextInput, Button, Alert, Progress } from 'flowbite-react'
 import { HiMail, HiLockClosed, HiUser, HiEye, HiEyeOff, HiShieldCheck } from 'react-icons/hi';
 import { Shield, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BRANDING_MESSAGES } from '../config/branding';
 
 export default function Signup() {
   const [formData, setFormData] = useState({
@@ -95,7 +96,7 @@ export default function Signup() {
     }
 
     if (!validateEmailDomain(formData.email)) {
-      setError('Only @kraftstories.com email addresses are allowed to register');
+      setError(BRANDING_MESSAGES.signupAuthRestrictionMessage);
       return false;
     }
 
@@ -203,10 +204,10 @@ export default function Signup() {
             <Shield className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-            Join KraftStories
+            {BRANDING_MESSAGES.signupTitle}
           </h1>
           <h2 className="mt-2 text-xl font-semibold text-gray-600 dark:text-gray-300">
-            Workshop Tracker
+            {BRANDING_MESSAGES.navbarTitle}
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Create your secure account
@@ -218,7 +219,7 @@ export default function Signup() {
           <div className="flex items-center space-x-2">
             <HiShieldCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
             <span className="text-sm font-medium text-green-800 dark:text-green-200">
-              Exclusive to kraftstories.com domain
+              {BRANDING_MESSAGES.signupSubtitle}
             </span>
           </div>
         </div>
@@ -261,7 +262,7 @@ export default function Signup() {
                   name="email"
                   type="email"
                   icon={HiMail}
-                  placeholder="yourname@kraftstories.com"
+                  placeholder={BRANDING_MESSAGES.emailPlaceholder}
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -280,7 +281,7 @@ export default function Signup() {
               </div>
               {formData.email && !isEmailValid && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  Must be a @kraftstories.com email address
+                  {BRANDING_MESSAGES.emailValidationMessage}
                 </p>
               )}
             </div>
@@ -462,7 +463,7 @@ export default function Signup() {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            © 2024 KraftStories. By signing up, you agree to our Terms of Service.
+            {BRANDING_MESSAGES.signupCopyright}
           </p>
         </div>
       </div>

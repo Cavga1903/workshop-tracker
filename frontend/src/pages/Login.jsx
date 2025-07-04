@@ -4,6 +4,7 @@ import { Card, Label, TextInput, Button, Alert, Checkbox } from 'flowbite-react'
 import { HiMail, HiLockClosed, HiEye, HiEyeOff, HiShieldCheck } from 'react-icons/hi';
 import { Shield, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BRANDING_MESSAGES } from '../config/branding';
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -47,7 +48,7 @@ export default function Login() {
     }
 
     if (!validateEmailDomain(formData.email)) {
-      setError('Only @kraftstories.com email addresses are allowed');
+      setError(BRANDING_MESSAGES.authRestrictionMessage);
       return false;
     }
 
@@ -85,9 +86,9 @@ export default function Login() {
         
         // Save login preference
         if (formData.rememberMe) {
-          localStorage.setItem('kraftstories_remember', 'true');
+          localStorage.setItem('company_remember', 'true');
         } else {
-          localStorage.removeItem('kraftstories_remember');
+          localStorage.removeItem('company_remember');
         }
 
         // Small delay to show success message
@@ -117,10 +118,10 @@ export default function Login() {
             <Shield className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-            KraftStories
+            {BRANDING_MESSAGES.protectedRouteTitle}
           </h1>
           <h2 className="mt-2 text-xl font-semibold text-gray-600 dark:text-gray-300">
-            Workshop Tracker
+            {BRANDING_MESSAGES.loginTitle}
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Sign in to your account
@@ -132,7 +133,7 @@ export default function Login() {
           <div className="flex items-center space-x-2">
             <HiShieldCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Secure Login - kraftstories.com domain only
+              {BRANDING_MESSAGES.loginSubtitle}
             </span>
           </div>
         </div>
@@ -160,7 +161,7 @@ export default function Login() {
                   name="email"
                   type="email"
                   icon={HiMail}
-                  placeholder="yourname@kraftstories.com"
+                  placeholder={BRANDING_MESSAGES.emailPlaceholder}
                   value={formData.email}
                   onChange={handleChange}
                   required
@@ -179,7 +180,7 @@ export default function Login() {
               </div>
               {formData.email && !isEmailValid && (
                 <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                  Must be a @kraftstories.com email address
+                  {BRANDING_MESSAGES.emailValidationMessage}
                 </p>
               )}
             </div>
@@ -253,7 +254,7 @@ export default function Login() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                  New to KraftStories?
+                  {BRANDING_MESSAGES.newUserPrompt}
                 </span>
               </div>
             </div>
@@ -273,7 +274,7 @@ export default function Login() {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            © 2024 KraftStories. Secure authentication powered by Supabase.
+            {BRANDING_MESSAGES.copyright}
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { Card, Label, TextInput, Button, Alert } from 'flowbite-react';
 import { HiMail, HiShieldCheck, HiArrowLeft } from 'react-icons/hi';
 import { Shield, CheckCircle, AlertCircle, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { BRANDING_MESSAGES } from '../config/branding';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -26,7 +27,7 @@ export default function ForgotPassword() {
     }
 
     if (!validateEmailDomain(email)) {
-      setError('Only @kraftstories.com email addresses are allowed');
+      setError(BRANDING_MESSAGES.authRestrictionMessage);
       return false;
     }
 
@@ -72,7 +73,7 @@ export default function ForgotPassword() {
             Reset Password
           </h1>
           <h2 className="mt-2 text-xl font-semibold text-gray-600 dark:text-gray-300">
-            KraftStories Account
+            {BRANDING_MESSAGES.forgotPasswordTitle}
           </h2>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             Enter your email to receive reset instructions
@@ -84,7 +85,7 @@ export default function ForgotPassword() {
           <div className="flex items-center space-x-2">
             <HiShieldCheck className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
-              Secure password reset for kraftstories.com
+              {BRANDING_MESSAGES.forgotPasswordSubtitle}
             </span>
           </div>
         </div>
@@ -107,7 +108,7 @@ export default function ForgotPassword() {
                     name="email"
                     type="email"
                     icon={HiMail}
-                    placeholder="yourname@kraftstories.com"
+                    placeholder={BRANDING_MESSAGES.emailPlaceholder}
                     value={email}
                     onChange={handleChange}
                     required
@@ -126,7 +127,7 @@ export default function ForgotPassword() {
                 </div>
                 {email && !isEmailValid && (
                   <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                    Must be a @kraftstories.com email address
+                    {BRANDING_MESSAGES.emailValidationMessage}
                   </p>
                 )}
               </div>
@@ -221,7 +222,7 @@ export default function ForgotPassword() {
         {/* Footer */}
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            © 2024 KraftStories. Secure password reset powered by Supabase.
+            {BRANDING_MESSAGES.forgotPasswordCopyright}
           </p>
         </div>
       </div>

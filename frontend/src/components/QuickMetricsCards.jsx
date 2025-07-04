@@ -34,61 +34,37 @@ export default function QuickMetricsCards() {
       const yearStart = `${currentYear}-01-01`;
       const yearEnd = `${currentYear}-12-31`;
 
-      // Fetch user's workshops
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, instructor_id')
-        .eq('instructor_id', user.id);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
-      // Fetch incomes for this year
+      // Fetch user's incomes for this year
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]) // Use -1 if no workshops to prevent empty array issue
+        .select('amount, created_at, name, guest_count')
+        .eq('user_id', user.id)
         .gte('created_at', yearStart)
         .lte('created_at', yearEnd);
 
       if (incomesError) throw incomesError;
 
-      // Fetch expenses for this year
+      // Fetch user's expenses for this year
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
         .select('amount, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .eq('user_id', user.id)
         .gte('created_at', yearStart)
         .lte('created_at', yearEnd);
 
       if (expensesError) throw expensesError;
-
-      // Fetch participants for all workshops
-      const { data: participants, error: participantsError } = await supabase
-        .from('participants')
-        .select('id, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
-
-      if (participantsError) throw participantsError;
 
       // Calculate totals
       const totalIncome = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
       const totalExpenses = expenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
       const netProfit = totalIncome - totalExpenses;
 
-      // Calculate most popular workshop
-      const workshopParticipants = {};
-      participants?.forEach(participant => {
-        workshopParticipants[participant.workshop_id] = (workshopParticipants[participant.workshop_id] || 0) + 1;
-      });
+      // Calculate most popular workshop (based on guest count)
+      const mostPopularWorkshop = incomes?.reduce((prev, current) => {
+        return (current.guest_count > prev.guest_count) ? current : prev;
+      }, { guest_count: 0 });
 
-      const mostPopularWorkshopId = Object.keys(workshopParticipants).reduce((a, b) => 
-        workshopParticipants[a] > workshopParticipants[b] ? a : b, null
-      );
-
-      const mostPopularWorkshop = workshops?.find(w => w.id == mostPopularWorkshopId);
-      const mostPopularCount = workshopParticipants[mostPopularWorkshopId] || 0;
+      const mostPopularCount = mostPopularWorkshop?.guest_count || 0;
 
       // Calculate year-over-year changes (simplified - comparing to last year)
       const lastYear = currentYear - 1;
@@ -98,14 +74,14 @@ export default function QuickMetricsCards() {
       const { data: lastYearIncomes } = await supabase
         .from('incomes')
         .select('amount')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .eq('user_id', user.id)
         .gte('created_at', lastYearStart)
         .lte('created_at', lastYearEnd);
 
       const { data: lastYearExpenses } = await supabase
         .from('expenses')
         .select('amount')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .eq('user_id', user.id)
         .gte('created_at', lastYearStart)
         .lte('created_at', lastYearEnd);
 
@@ -121,9 +97,9 @@ export default function QuickMetricsCards() {
         totalIncome,
         totalExpenses,
         netProfit,
-        totalWorkshops: workshops?.length || 0,
-        totalParticipants: participants?.length || 0,
-        mostPopularWorkshop: mostPopularWorkshop?.title || 'No workshops yet',
+        totalWorkshops: incomes?.length || 0,
+        totalParticipants: incomes?.reduce((sum, income) => sum + (income.guest_count || 0), 0) || 0,
+        mostPopularWorkshop: mostPopularWorkshop?.name || 'No workshops yet',
         mostPopularCount,
         incomeChange,
         expenseChange,

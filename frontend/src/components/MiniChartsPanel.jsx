@@ -38,50 +38,32 @@ export default function MiniChartsPanel() {
     setError(null);
 
     try {
-      // Fetch user's workshops
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, created_at')
-        .eq('instructor_id', user.id);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
-      // Fetch incomes for the last 6 months
+      // Fetch user's incomes for the last 6 months
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .select('amount, created_at, name, guest_count')
+        .eq('user_id', user.id)
         .gte('created_at', sixMonthsAgo.toISOString());
 
       if (incomesError) throw incomesError;
 
-      // Fetch expenses with description for categorization
+      // Fetch user's expenses for categorization
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
-        .select('amount, description, created_at, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+        .select('amount, name, created_at, category')
+        .eq('user_id', user.id);
 
       if (expensesError) throw expensesError;
-
-      // Fetch participants to calculate workshop popularity
-      const { data: participants, error: participantsError } = await supabase
-        .from('participants')
-        .select('id, workshop_id, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
-
-      if (participantsError) throw participantsError;
 
       // Process monthly income data
       const processedMonthlyData = processMonthlyIncomeData(incomes || []);
       setMonthlyIncomeData(processedMonthlyData);
 
-      // Process workshop popularity data
-      const processedPopularityData = processWorkshopPopularityData(workshops || [], participants || []);
+      // Process workshop popularity data (based on guest count)
+      const processedPopularityData = processWorkshopPopularityData(incomes || []);
       setClassPopularityData(processedPopularityData);
 
       // Process expense breakdown data
@@ -118,29 +100,22 @@ export default function MiniChartsPanel() {
     return Object.values(monthlyData);
   };
 
-  const processWorkshopPopularityData = (workshops, participants) => {
-    const workshopParticipants = {};
+  const processWorkshopPopularityData = (incomes) => {
     const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#F97316'];
 
-    // Count participants per workshop
-    participants.forEach(participant => {
-      workshopParticipants[participant.workshop_id] = (workshopParticipants[participant.workshop_id] || 0) + 1;
-    });
-
-    // Calculate percentages and create chart data
-    const totalParticipants = participants.length;
+    // Calculate total participants
+    const totalParticipants = incomes.reduce((sum, income) => sum + (income.guest_count || 0), 0);
     if (totalParticipants === 0) return [];
 
-    const popularWorkshops = Object.entries(workshopParticipants)
-      .map(([workshopId, count]) => {
-        const workshop = workshops.find(w => w.id == workshopId);
-        return {
-          name: workshop?.title || 'Unknown Workshop',
-          value: Math.round((count / totalParticipants) * 100),
-          count,
-          color: colors[Object.keys(workshopParticipants).indexOf(workshopId) % colors.length]
-        };
-      })
+    // Create chart data based on guest count
+    const popularWorkshops = incomes
+      .filter(income => income.guest_count > 0)
+      .map((income, index) => ({
+        name: income.name || 'Unknown Workshop',
+        value: Math.round((income.guest_count / totalParticipants) * 100),
+        count: income.guest_count,
+        color: colors[index % colors.length]
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 4); // Top 4 workshops
 
@@ -150,23 +125,9 @@ export default function MiniChartsPanel() {
   const processExpenseBreakdownData = (expenses) => {
     const categories = {};
 
-    // Categorize expenses based on description keywords
+    // Group expenses by category
     expenses.forEach(expense => {
-      const description = (expense.description || '').toLowerCase();
-      let category = 'Other';
-
-      if (description.includes('supply') || description.includes('material') || description.includes('art')) {
-        category = 'Art Supplies';
-      } else if (description.includes('rent') || description.includes('studio') || description.includes('space')) {
-        category = 'Studio Rent';
-      } else if (description.includes('equipment') || description.includes('tool') || description.includes('machine')) {
-        category = 'Equipment';
-      } else if (description.includes('marketing') || description.includes('advertising') || description.includes('promotion')) {
-        category = 'Marketing';
-      } else if (description.includes('material') && !description.includes('art')) {
-        category = 'Materials';
-      }
-
+      const category = expense.category || 'Other';
       categories[category] = (categories[category] || 0) + (expense.amount || 0);
     });
 

@@ -36,59 +36,43 @@ export default function FinancialInsights() {
       const lastMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1);
       const currentYear = new Date().getFullYear();
 
-      // Fetch user's workshops
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, platform')
-        .eq('instructor_id', user.id);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
-      // Fetch current month income
-      const { data: currentMonthIncomes, error: currentIncomeError } = await supabase
+      // Fetch user's incomes (each income represents a workshop/class)
+      const { data: allIncomes, error: allIncomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
-        .gte('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+        .select('amount, created_at, name, platform, guest_count')
+        .eq('user_id', user.id);
 
-      if (currentIncomeError) throw currentIncomeError;
+      if (allIncomesError) throw allIncomesError;
 
-      // Fetch last month income
-      const { data: lastMonthIncomes, error: lastIncomeError } = await supabase
-        .from('incomes')
-        .select('amount, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
-        .gte('created_at', `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-01`)
-        .lt('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+      // Filter current month incomes
+      const currentMonthIncomes = allIncomes?.filter(income => {
+        const incomeDate = new Date(income.created_at);
+        return incomeDate.getFullYear() === currentMonth.getFullYear() && 
+               incomeDate.getMonth() === currentMonth.getMonth();
+      }) || [];
 
-      if (lastIncomeError) throw lastIncomeError;
+      // Filter last month incomes
+      const lastMonthIncomes = allIncomes?.filter(income => {
+        const incomeDate = new Date(income.created_at);
+        return incomeDate.getFullYear() === lastMonth.getFullYear() && 
+               incomeDate.getMonth() === lastMonth.getMonth();
+      }) || [];
 
-      // Fetch expenses
+      // Fetch user's expenses
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
-        .select('amount, description, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .select('amount, name, created_at')
+        .eq('user_id', user.id)
         .gte('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
 
       if (expenseError) throw expenseError;
-
-      // Fetch participants
-      const { data: participants, error: participantError } = await supabase
-        .from('participants')
-        .select('id, workshop_id, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
-
-      if (participantError) throw participantError;
 
       // Calculate insights
       const generatedInsights = generateInsights({
         currentMonthIncomes: currentMonthIncomes || [],
         lastMonthIncomes: lastMonthIncomes || [],
         expenses: expenses || [],
-        participants: participants || [],
-        workshops: workshops || []
+        allIncomes: allIncomes || []
       });
 
       setInsights(generatedInsights);
@@ -105,7 +89,8 @@ export default function FinancialInsights() {
     const currentMonthIncome = data.currentMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
     const lastMonthIncome = data.lastMonthIncomes.reduce((sum, income) => sum + (income.amount || 0), 0);
     const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
-    const totalParticipants = data.participants.length;
+    const totalParticipants = data.allIncomes.reduce((sum, income) => sum + (income.guest_count || 0), 0);
+    const totalWorkshops = data.allIncomes.length;
 
     // Income Growth/Decline Insight
     if (lastMonthIncome > 0) {
@@ -153,27 +138,19 @@ export default function FinancialInsights() {
       }
     }
 
-    // Workshop Popularity
-    const workshopParticipants = {};
-    data.participants.forEach(participant => {
-      workshopParticipants[participant.workshop_id] = (workshopParticipants[participant.workshop_id] || 0) + 1;
-    });
+    // Workshop Popularity (based on guest count)
+    const mostPopularWorkshop = data.allIncomes.reduce((prev, current) => {
+      return (current.guest_count > prev.guest_count) ? current : prev;
+    }, { guest_count: 0 });
 
-    const mostPopularWorkshopId = Object.keys(workshopParticipants).reduce((a, b) => 
-      workshopParticipants[a] > workshopParticipants[b] ? a : b, null
-    );
-
-    const mostPopularWorkshop = data.workshops.find(w => w.id == mostPopularWorkshopId);
-    const popularWorkshopCount = workshopParticipants[mostPopularWorkshopId] || 0;
-
-    if (mostPopularWorkshop && popularWorkshopCount > 0) {
-      const attendanceRate = (popularWorkshopCount / data.workshops.length) * 100;
-      if (attendanceRate > 80) {
+    if (mostPopularWorkshop.guest_count > 0) {
+      const avgGuestCount = totalParticipants / totalWorkshops;
+      if (mostPopularWorkshop.guest_count > avgGuestCount * 1.5) {
         insights.push({
           id: 3,
           type: 'suggestion',
           title: 'Popular Workshop Alert',
-          message: `${mostPopularWorkshop.title} has high attendance (${popularWorkshopCount} participants) - consider adding more sessions`,
+          message: `${mostPopularWorkshop.name} had high attendance (${mostPopularWorkshop.guest_count} participants) - consider adding more sessions`,
           emoji: '🌟',
           icon: Lightbulb,
           color: 'blue',
@@ -209,8 +186,8 @@ export default function FinancialInsights() {
 
     // Platform Analysis
     const platformCounts = {};
-    data.workshops.forEach(workshop => {
-      const platform = workshop.platform || 'Unknown';
+    data.allIncomes.forEach(income => {
+      const platform = income.platform || 'Unknown';
       platformCounts[platform] = (platformCounts[platform] || 0) + 1;
     });
 

@@ -33,41 +33,23 @@ export default function UserProfileSnapshot() {
     setError(null);
 
     try {
-      // Fetch user's workshops
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, platform')
-        .eq('instructor_id', user.id);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
-      // Fetch participants for all workshops
-      const { data: participants, error: participantsError } = await supabase
-        .from('participants')
-        .select('id, workshop_id, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
-
-      if (participantsError) throw participantsError;
-
-      // Fetch incomes for revenue calculation
+      // Fetch user's incomes (workshops and participants are derived from this)
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('amount, created_at')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+        .select('amount, created_at, guest_count, platform')
+        .eq('user_id', user.id);
 
       if (incomesError) throw incomesError;
 
       // Calculate stats
-      const totalWorkshops = workshops?.length || 0;
-      const totalParticipants = participants?.length || 0;
+      const totalWorkshops = incomes?.length || 0;
+      const totalParticipants = incomes?.reduce((sum, income) => sum + (income.guest_count || 0), 0) || 0;
       const totalRevenue = incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
 
       // Calculate favorite platform
       const platformCounts = {};
-      workshops?.forEach(workshop => {
-        const platform = workshop.platform || 'Unknown';
+      incomes?.forEach(income => {
+        const platform = income.platform || 'Unknown';
         platformCounts[platform] = (platformCounts[platform] || 0) + 1;
       });
 

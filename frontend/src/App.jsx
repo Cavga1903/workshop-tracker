@@ -21,6 +21,7 @@ import WhoPaid from './pages/WhoPaid';
 import CategoryBreakdown from './pages/CategoryBreakdown';
 import ClassIncomeBreakdown from './pages/ClassIncomeBreakdown';
 import MonthlyTrend from './pages/MonthlyTrend';
+import AdminClassTypes from './pages/AdminClassTypes';
 
 function AppContent() {
   const location = useLocation();
@@ -96,6 +97,11 @@ function AppContent() {
             <Route path="/monthly-trend" element={
               <ProtectedRoute>
                 <MonthlyTrend />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/class-types" element={
+              <ProtectedRoute>
+                <AdminClassTypes />
               </ProtectedRoute>
             } />
           </Routes>

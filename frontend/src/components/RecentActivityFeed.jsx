@@ -40,59 +40,36 @@ export default function RecentActivityFeed() {
     setError(null);
 
     try {
-      // Fetch user's workshops first
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, created_at')
-        .eq('instructor_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
-      // Fetch recent incomes
+      // Fetch user's recent incomes
       const { data: incomes, error: incomesError } = await supabase
         .from('incomes')
-        .select('id, amount, payer, created_at, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .select('id, amount, name, created_at, guest_count')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (incomesError) throw incomesError;
 
-      // Fetch recent expenses
+      // Fetch user's recent expenses
       const { data: expenses, error: expensesError } = await supabase
         .from('expenses')
-        .select('id, amount, description, created_at, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
+        .select('id, amount, name, created_at')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (expensesError) throw expensesError;
-
-      // Fetch recent participants
-      const { data: participants, error: participantsError } = await supabase
-        .from('participants')
-        .select('id, name, email, created_at, workshop_id')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1])
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (participantsError) throw participantsError;
 
       // Combine and process all activities
       const allActivities = [];
 
       // Process incomes
       incomes?.forEach(income => {
-        const workshop = workshops?.find(w => w.id === income.workshop_id);
         allActivities.push({
           id: `income_${income.id}`,
           type: 'income_added',
-          title: 'Payment received',
-          description: `${workshop?.title || 'Workshop'} - ${income.payer || 'Unknown payer'}`,
+          title: 'Workshop income received',
+          description: `${income.name} - ${income.guest_count} participants`,
           amount: `$${income.amount}`,
           time: getTimeAgo(income.created_at),
           timestamp: new Date(income.created_at),
@@ -103,46 +80,16 @@ export default function RecentActivityFeed() {
 
       // Process expenses
       expenses?.forEach(expense => {
-        const workshop = workshops?.find(w => w.id === expense.workshop_id);
         allActivities.push({
           id: `expense_${expense.id}`,
           type: 'expense_added',
-          title: 'Added expense',
-          description: `${expense.description} - ${workshop?.title || 'Workshop'}`,
+          title: 'Expense added',
+          description: expense.name,
           amount: `$${expense.amount}`,
           time: getTimeAgo(expense.created_at),
           timestamp: new Date(expense.created_at),
           icon: CreditCard,
           color: 'red'
-        });
-      });
-
-      // Process workshops
-      workshops?.forEach(workshop => {
-        allActivities.push({
-          id: `workshop_${workshop.id}`,
-          type: 'workshop_scheduled',
-          title: 'Workshop scheduled',
-          description: `${workshop.title} - ${new Date(workshop.date).toLocaleDateString()}`,
-          time: getTimeAgo(workshop.created_at),
-          timestamp: new Date(workshop.created_at),
-          icon: Calendar,
-          color: 'purple'
-        });
-      });
-
-      // Process participants
-      participants?.forEach(participant => {
-        const workshop = workshops?.find(w => w.id === participant.workshop_id);
-        allActivities.push({
-          id: `participant_${participant.id}`,
-          type: 'participant_joined',
-          title: 'New participant',
-          description: `${participant.name} joined ${workshop?.title || 'workshop'}`,
-          time: getTimeAgo(participant.created_at),
-          timestamp: new Date(participant.created_at),
-          icon: Users,
-          color: 'blue'
         });
       });
 
@@ -157,8 +104,8 @@ export default function RecentActivityFeed() {
       setActivityCounts({
         incomes: incomes?.length || 0,
         expenses: expenses?.length || 0,
-        workshops: workshops?.length || 0,
-        participants: participants?.length || 0
+        workshops: incomes?.length || 0,
+        participants: incomes?.reduce((sum, income) => sum + (income.guest_count || 0), 0) || 0
       });
 
     } catch (err) {

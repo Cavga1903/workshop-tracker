@@ -37,70 +37,31 @@ export default function UpcomingEvents() {
       const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days from now
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      // Fetch user's upcoming workshops
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id, title, date, platform, instructor_id')
-        .eq('instructor_id', user.id)
+      // Fetch user's upcoming incomes (representing upcoming workshops)
+      const { data: incomes, error: incomesError } = await supabase
+        .from('incomes')
+        .select('id, name, date, platform, amount, guest_count')
+        .eq('user_id', user.id)
         .gte('date', todayStr)
         .lte('date', endDateStr)
         .order('date', { ascending: true });
 
-      if (workshopsError) throw workshopsError;
-
-      // Fetch participants count for each workshop
-      const workshopIds = workshops?.map(w => w.id) || [];
-      let participantsData = [];
-      let incomesData = [];
-
-      if (workshopIds.length > 0) {
-        const { data: participants, error: participantsError } = await supabase
-          .from('participants')
-          .select('workshop_id')
-          .in('workshop_id', workshopIds);
-
-        if (participantsError) throw participantsError;
-        participantsData = participants || [];
-
-        // Fetch incomes for pricing information
-        const { data: incomes, error: incomesError } = await supabase
-          .from('incomes')
-          .select('workshop_id, amount')
-          .in('workshop_id', workshopIds);
-
-        if (incomesError) throw incomesError;
-        incomesData = incomes || [];
-      }
-
-      // Count participants per workshop
-      const participantCounts = {};
-      participantsData.forEach(participant => {
-        participantCounts[participant.workshop_id] = (participantCounts[participant.workshop_id] || 0) + 1;
-      });
-
-      // Calculate total income per workshop
-      const workshopIncomes = {};
-      incomesData.forEach(income => {
-        workshopIncomes[income.workshop_id] = (workshopIncomes[income.workshop_id] || 0) + (income.amount || 0);
-      });
+      if (incomesError) throw incomesError;
 
       // Transform data for display
-      const transformedEvents = workshops?.map(workshop => {
-        const participantCount = participantCounts[workshop.id] || 0;
-        const totalIncome = workshopIncomes[workshop.id] || 0;
-        
+      const transformedEvents = incomes?.map(income => {
         return {
-          id: workshop.id,
+          id: income.id,
           type: 'workshop',
-          title: workshop.title || 'Workshop',
-          date: workshop.date,
-          location: workshop.platform || 'TBD',
-          participants: participantCount,
-          price: totalIncome,
-          eventType: workshop.platform === 'Zoom' ? 'Online' : 'In-person',
-          status: getEventStatus(workshop.date, totalIncome),
+          title: income.name || 'Workshop',
+          date: income.date,
+          location: income.platform || 'TBD',
+          participants: income.guest_count || 0,
+          price: income.amount || 0,
+          eventType: income.platform === 'Zoom' ? 'Online' : 'In-person',
+          status: getEventStatus(income.date, income.amount),
           icon: Calendar,
-          color: getEventColor(workshop.date, totalIncome)
+          color: getEventColor(income.date, income.amount)
         };
       }) || [];
 

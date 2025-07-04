@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Label, TextInput, Select, Button, Alert, Card, Spinner } from 'flowbite-react';
 import { HiCurrencyDollar, HiUser, HiCalendar, HiTag, HiCollection } from 'react-icons/hi';
-import { Users, CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -31,39 +31,20 @@ export default function AddExpense() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    // Pre-select current user when users are loaded
-    if (users.length > 0 && user && !form.whoPaid) {
-      const currentUser = users.find(u => u.id === user.id);
-      if (currentUser) {
-        setForm(prev => ({ ...prev, whoPaid: currentUser.full_name }));
-      }
-    }
-  }, [users, user, form.whoPaid]);
-
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url')
-        .order('full_name');
-      
-      if (error) throw error;
-      setUsers(data || []);
-    } catch (err) {
-      console.error('Error fetching users:', err);
-      setError('Failed to load users');
-    } finally {
-      setLoadingUsers(false);
-    }
+  const getCurrentUserName = () => {
+    if (profile?.full_name) return profile.full_name;
+    if (user?.email) return user.email.split('@')[0];
+    return 'Current User';
   };
+
+  useEffect(() => {
+    // Pre-select current user as the payer
+    if (user && !form.whoPaid) {
+      const userName = getCurrentUserName();
+      setForm(prev => ({ ...prev, whoPaid: userName }));
+    }
+  }, [user, profile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -103,12 +84,6 @@ export default function AddExpense() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getCurrentUserName = () => {
-    if (profile?.full_name) return profile.full_name;
-    if (user?.email) return user.email.split('@')[0];
-    return 'Current User';
   };
 
   return (
@@ -181,43 +156,17 @@ export default function AddExpense() {
 
             <div>
               <Label htmlFor="whoPaid" value="Who Paid *" className="text-sm font-medium" />
-              <div className="relative">
-                <Select 
-                  id="whoPaid" 
-                  name="whoPaid" 
-                  value={form.whoPaid} 
-                  onChange={handleChange} 
-                  required
-                  disabled={loadingUsers}
-                  icon={Users}
-                  className="pr-10"
-                >
-                  <option value="">
-                    {loadingUsers ? 'Loading users...' : 'Select who paid'}
-                  </option>
-                  {users.map((userItem) => {
-                    const isCurrentUser = userItem.id === user?.id;
-                    return (
-                      <option 
-                        key={userItem.id} 
-                        value={userItem.full_name}
-                        disabled={!isCurrentUser}
-                        className={isCurrentUser ? 'font-medium' : 'text-gray-400'}
-                      >
-                        {userItem.full_name || userItem.email.split('@')[0]}
-                        {isCurrentUser ? ' (You)' : ' (Not selectable)'}
-                      </option>
-                    );
-                  })}
-                </Select>
-                {loadingUsers && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Spinner size="sm" />
-                  </div>
-                )}
-              </div>
+              <TextInput 
+                id="whoPaid" 
+                name="whoPaid" 
+                value={form.whoPaid} 
+                icon={HiUser}
+                readOnly
+                disabled
+                className="bg-gray-50 dark:bg-gray-700"
+              />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                You can only select yourself as the payer
+                All expenses are automatically assigned to you as the payer
               </p>
             </div>
 
@@ -274,7 +223,7 @@ export default function AddExpense() {
               gradientDuoTone="redToOrange"
               className="w-full md:w-auto"
               isProcessing={loading}
-              disabled={loading || loadingUsers}
+              disabled={loading}
             >
               {loading ? 'Adding Expense...' : 'Add Expense'}
             </Button>

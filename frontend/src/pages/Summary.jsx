@@ -24,21 +24,11 @@ export default function Summary() {
     setLoading(true);
     setError(null);
     try {
-      // Fetch user's workshops first
-      const { data: workshops, error: workshopsError } = await supabase
-        .from('workshops')
-        .select('id')
-        .eq('instructor_id', user.id);
-
-      if (workshopsError) throw workshopsError;
-
-      const workshopIds = workshops?.map(w => w.id) || [];
-
       // Fetch user's income data
       const { data: incomes, error: incomeError } = await supabase
         .from('incomes')
         .select('amount')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+        .eq('user_id', user.id);
 
       if (incomeError) throw incomeError;
 
@@ -46,7 +36,7 @@ export default function Summary() {
       const { data: expenses, error: expenseError } = await supabase
         .from('expenses')
         .select('amount')
-        .in('workshop_id', workshopIds.length > 0 ? workshopIds : [-1]);
+        .eq('user_id', user.id);
 
       if (expenseError) throw expenseError;
 

@@ -1,11 +1,4 @@
 {
-<<<<<<< HEAD
-  "dependencies": {
-    "flowbite": "^3.1.2",
-    "flowbite-react": "^0.11.8"
-  }
-}
-=======
   "name": "workshop-tracker",
   "version": "1.0.0",
   "description": "A modern, full-stack web application for managing creative workshops, tracking income and expenses, and providing insightful analytics for workshop instructors.",
@@ -50,4 +43,3 @@
     "concurrently": "^8.2.2"
   }
 } 
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1

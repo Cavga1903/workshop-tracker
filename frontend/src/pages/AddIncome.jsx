@@ -4,6 +4,7 @@ import { HiCash, HiUserGroup, HiCurrencyDollar, HiTruck, HiCalendar, HiTag } fro
 import { BookOpen, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
+import { notifyNewIncome } from '../utils/emailNotifications';
 
 const initialState = {
   date: new Date().toISOString().split('T')[0],
@@ -86,12 +87,20 @@ export default function AddIncome() {
         profit: profit,
       };
 
-      const { error } = await supabase.from('incomes').insert([incomeData]);
+      const { data, error } = await supabase.from('incomes').insert([incomeData]).select().single();
 
       if (error) throw error;
 
       setSuccess(true);
       setForm(initialState);
+      
+      // Send email notification in background (don't block UI)
+      if (data) {
+        notifyNewIncome(data).catch(err => {
+          console.log('Email notification failed (non-critical):', err);
+        });
+      }
+      
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError(err.message);

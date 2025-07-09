@@ -58,8 +58,8 @@ export default function FinancialInsights() {
                incomeDate.getMonth() === lastMonth.getMonth();
       }) || [];
 
-      // Fetch user's expenses
-      const { data: expenses, error: expenseError } = await supabase
+      // Fetch user's expenses for current month
+      const { data: currentMonthExpenses, error: expenseError } = await supabase
         .from('expenses')
         .select('cost, name, created_at')
         .eq('user_id', user.id)
@@ -67,12 +67,34 @@ export default function FinancialInsights() {
 
       if (expenseError) throw expenseError;
 
+      // Fetch user's expenses for last month
+      const { data: lastMonthExpenses, error: lastExpenseError } = await supabase
+        .from('expenses')
+        .select('cost, name, created_at')
+        .eq('user_id', user.id)
+        .gte('created_at', `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}-01`)
+        .lt('created_at', `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-01`);
+
+      if (lastExpenseError) throw lastExpenseError;
+
+      // Fetch workshop data for attendance analysis
+      const { data: workshops, error: workshopError } = await supabase
+        .from('workshops')
+        .select('*')
+        .eq('instructor_id', user.id)
+        .order('date', { ascending: false });
+
+      // Don't throw error if workshops table doesn't exist yet
+      const workshopsData = workshopError ? [] : (workshops || []);
+
       // Calculate insights
       const generatedInsights = generateInsights({
         currentMonthIncomes: currentMonthIncomes || [],
         lastMonthIncomes: lastMonthIncomes || [],
-        expenses: expenses || [],
-        allIncomes: allIncomes || []
+        currentMonthExpenses: currentMonthExpenses || [],
+        lastMonthExpenses: lastMonthExpenses || [],
+        allIncomes: allIncomes || [],
+        workshops: workshopsData || []
       });
 
       setInsights(generatedInsights);
@@ -88,7 +110,8 @@ export default function FinancialInsights() {
     const insights = [];
     const currentMonthIncome = data.currentMonthIncomes.reduce((sum, income) => sum + (income.payment || 0), 0);
     const lastMonthIncome = data.lastMonthIncomes.reduce((sum, income) => sum + (income.payment || 0), 0);
-    const totalExpenses = data.expenses.reduce((sum, expense) => sum + (expense.cost || 0), 0);
+    const currentMonthExpenses = data.currentMonthExpenses.reduce((sum, expense) => sum + (expense.cost || 0), 0);
+    const lastMonthExpenses = data.lastMonthExpenses.reduce((sum, expense) => sum + (expense.cost || 0), 0);
     const totalParticipants = data.allIncomes.reduce((sum, income) => sum + (income.guest_count || 0), 0);
     const totalWorkshops = data.allIncomes.length;
 
@@ -99,7 +122,7 @@ export default function FinancialInsights() {
         insights.push({
           id: 1,
           type: 'positive',
-          title: 'Income Growth',
+          title: "You're Growing! 🚀",
           message: `Your workshop income increased by ${incomeChange.toFixed(1)}% compared to last month`,
           emoji: '🚀',
           icon: TrendingUp,
@@ -120,13 +143,40 @@ export default function FinancialInsights() {
       }
     }
 
-    // Expense Analysis
-    const avgMonthlyExpenses = totalExpenses; // This would be better with historical data
-    if (totalExpenses > 0 && currentMonthIncome > 0) {
-      const expenseRatio = (totalExpenses / currentMonthIncome) * 100;
-      if (expenseRatio > 50) {
+    // Expense Growth Analysis
+    if (lastMonthExpenses > 0) {
+      const expenseChange = ((currentMonthExpenses - lastMonthExpenses) / lastMonthExpenses) * 100;
+      if (expenseChange > 30) {
         insights.push({
           id: 2,
+          type: 'warning',
+          title: 'Expenses Rising Fast',
+          message: `Your expenses increased by ${expenseChange.toFixed(1)}% compared to last month. Consider reviewing your spending`,
+          emoji: '⚠️',
+          icon: AlertTriangle,
+          color: 'orange',
+          action: 'Review expenses'
+        });
+      }
+    } else if (currentMonthExpenses > 0 && lastMonthExpenses === 0) {
+      insights.push({
+        id: 2,
+        type: 'info',
+        title: 'New Expenses Added',
+        message: `You've started tracking expenses this month. Keep monitoring to optimize costs`,
+        emoji: '📊',
+        icon: Info,
+        color: 'blue',
+        action: 'Monitor spending'
+      });
+    }
+
+    // Expense Analysis
+    if (currentMonthExpenses > 0 && currentMonthIncome > 0) {
+      const expenseRatio = (currentMonthExpenses / currentMonthIncome) * 100;
+      if (expenseRatio > 50) {
+        insights.push({
+          id: 3,
           type: 'warning',
           title: 'High Expense Ratio',
           message: `Expenses are ${expenseRatio.toFixed(1)}% of income this month`,
@@ -134,6 +184,34 @@ export default function FinancialInsights() {
           icon: AlertTriangle,
           color: 'orange',
           action: 'Review costs'
+        });
+      }
+    }
+
+    // Workshop Attendance Analysis
+    if (data.workshops && data.workshops.length > 0) {
+      const recentWorkshops = data.workshops.slice(0, 10); // Analyze last 10 workshops
+      const highAttendanceWorkshops = recentWorkshops.filter(workshop => {
+        // Check if attendance rate > 90% (assuming we have capacity and actual attendance)
+        if (workshop.capacity && workshop.attendance) {
+          const attendanceRate = (workshop.attendance / workshop.capacity) * 100;
+          return attendanceRate > 90;
+        }
+        return false;
+      });
+
+      if (highAttendanceWorkshops.length > 0) {
+        const topWorkshop = highAttendanceWorkshops[0];
+        const attendanceRate = (topWorkshop.attendance / topWorkshop.capacity) * 100;
+        insights.push({
+          id: 4,
+          type: 'achievement',
+          title: 'Popular Workshop! 🌟',
+          message: `"${topWorkshop.name}" had ${attendanceRate.toFixed(1)}% attendance rate - your workshops are in high demand!`,
+          emoji: '🌟',
+          icon: Star,
+          color: 'purple',
+          action: 'Schedule more sessions'
         });
       }
     }
@@ -147,7 +225,7 @@ export default function FinancialInsights() {
       const avgGuestCount = totalParticipants / totalWorkshops;
       if (mostPopularWorkshop.guest_count > avgGuestCount * 1.5) {
         insights.push({
-          id: 3,
+          id: 5,
           type: 'suggestion',
           title: 'Popular Workshop Alert',
           message: `${mostPopularWorkshop.name} had high attendance (${mostPopularWorkshop.guest_count} participants) - consider adding more sessions`,
@@ -162,10 +240,10 @@ export default function FinancialInsights() {
     // Milestone Achievement
     if (totalParticipants > 1000) {
       insights.push({
-        id: 4,
+        id: 6,
         type: 'achievement',
-        title: 'Milestone Reached',
-        message: `Congratulations! You've taught ${totalParticipants.toLocaleString()} creative souls`,
+        title: '🎉 1000+ Students Milestone!',
+        message: `Congratulations! You've taught ${totalParticipants.toLocaleString()} creative souls - you're making a real impact!`,
         emoji: '🎉',
         icon: Star,
         color: 'purple',
@@ -173,14 +251,25 @@ export default function FinancialInsights() {
       });
     } else if (totalParticipants > 500) {
       insights.push({
-        id: 4,
+        id: 6,
         type: 'achievement',
-        title: 'Great Progress',
-        message: `Amazing! You've reached ${totalParticipants} participants`,
+        title: 'Great Progress! 👏',
+        message: `Amazing! You've reached ${totalParticipants} participants - you're building something special!`,
         emoji: '👏',
         icon: Star,
         color: 'purple',
         action: 'Keep growing!'
+      });
+    } else if (totalParticipants > 100) {
+      insights.push({
+        id: 6,
+        type: 'positive',
+        title: 'Growing Community',
+        message: `You've reached ${totalParticipants} participants! Your workshops are making an impact`,
+        emoji: '🌱',
+        icon: TrendingUp,
+        color: 'green',
+        action: 'Keep it up!'
       });
     }
 
@@ -197,7 +286,7 @@ export default function FinancialInsights() {
 
     if (mostUsedPlatform && mostUsedPlatform !== 'Unknown') {
       insights.push({
-        id: 5,
+        id: 7,
         type: 'info',
         title: 'Platform Preference',
         message: `${mostUsedPlatform} is your most used platform with ${platformCounts[mostUsedPlatform]} workshops`,
@@ -209,23 +298,34 @@ export default function FinancialInsights() {
     }
 
     // Profit Margin Insight
-    if (currentMonthIncome > 0 && totalExpenses > 0) {
-      const profitMargin = ((currentMonthIncome - totalExpenses) / currentMonthIncome) * 100;
+    if (currentMonthIncome > 0 && currentMonthExpenses > 0) {
+      const profitMargin = ((currentMonthIncome - currentMonthExpenses) / currentMonthIncome) * 100;
       if (profitMargin > 70) {
         insights.push({
-          id: 6,
+          id: 8,
           type: 'positive',
-          title: 'Excellent Profit Margin',
+          title: 'Excellent Profit Margin! 💚',
           message: `Your profit margin is ${profitMargin.toFixed(1)}% - excellent financial performance`,
           emoji: '💚',
           icon: Target,
           color: 'green',
           action: 'Maintain efficiency'
         });
+      } else if (profitMargin < 20) {
+        insights.push({
+          id: 8,
+          type: 'warning',
+          title: 'Low Profit Margin',
+          message: `Your profit margin is ${profitMargin.toFixed(1)}% - consider optimizing costs or increasing prices`,
+          emoji: '📉',
+          icon: AlertTriangle,
+          color: 'orange',
+          action: 'Optimize margins'
+        });
       }
     }
 
-    return insights.slice(0, 6); // Return max 6 insights
+    return insights.slice(0, 8); // Return max 8 insights for better analysis
   };
 
   const getColorClasses = (color, type) => {

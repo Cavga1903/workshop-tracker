@@ -22,6 +22,11 @@ import CategoryBreakdown from './pages/CategoryBreakdown';
 import ClassIncomeBreakdown from './pages/ClassIncomeBreakdown';
 import MonthlyTrend from './pages/MonthlyTrend';
 import AdminClassTypes from './pages/AdminClassTypes';
+import Documents from './pages/Documents';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import WorkshopCalendar from './pages/WorkshopCalendar';
+import ClientManagement from './pages/ClientManagement';
+import EmailNotificationSettings from './pages/EmailNotificationSettings';
 
 function AppContent() {
   const location = useLocation();
@@ -35,7 +40,7 @@ function AppContent() {
       {!isAuthPage && <Navbar />}
 
       {/* Main Content */}
-      <div className={`${!isAuthPage ? 'pt-20' : ''} pb-8 px-4`}>
+      <div className={`${!isAuthPage ? 'pt-20' : ''} pb-8 px-4 min-h-screen bg-gray-50 dark:bg-gray-900`}>
         <div className="max-w-7xl mx-auto">
           <Routes>
             {/* Public routes */}
@@ -102,6 +107,31 @@ function AppContent() {
             <Route path="/admin/class-types" element={
               <ProtectedRoute>
                 <AdminClassTypes />
+              </ProtectedRoute>
+            } />
+            <Route path="/documents" element={
+              <ProtectedRoute>
+                <Documents />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <AnalyticsDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/calendar" element={
+              <ProtectedRoute>
+                <WorkshopCalendar />
+              </ProtectedRoute>
+            } />
+            <Route path="/clients" element={
+              <ProtectedRoute>
+                <ClientManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/email-settings" element={
+              <ProtectedRoute>
+                <EmailNotificationSettings />
               </ProtectedRoute>
             } />
           </Routes>

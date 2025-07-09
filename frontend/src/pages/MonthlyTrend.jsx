@@ -77,7 +77,7 @@ export default function MonthlyTrend() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4">Monthly Trend</h2>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Monthly Trend</h2>
       {loading ? (
         <div className="flex justify-center items-center h-32">
           <Spinner size="xl" />

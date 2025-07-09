@@ -156,6 +156,13 @@ export default function AdminClassTypes() {
     });
   };
 
+  // Form validation helper
+  const isFormValid = () => {
+    return formData.name.trim().length > 0 && 
+           formData.cost_per_person && 
+           parseFloat(formData.cost_per_person) >= 0;
+  };
+
   // Access denied for non-admin users
   if (!isAdmin) {
     return (
@@ -202,13 +209,11 @@ export default function AdminClassTypes() {
         </Button>
       </div>
 
-
-
       {/* Class Types Table */}
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Settings className="h-5 w-5 text-gray-500" />
+            <Settings className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Class Types ({classTypes.length})
             </h2>
@@ -222,7 +227,7 @@ export default function AdminClassTypes() {
         ) : classTypes.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Settings className="w-8 h-8 text-gray-400" />
+              <Settings className="w-8 h-8 text-gray-400 dark:text-gray-600" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               No Class Types Yet
@@ -317,10 +322,24 @@ export default function AdminClassTypes() {
           </form>
         </Modal.Body>
         <Modal.Footer>
-          <Button type="submit" onClick={handleSubmit} disabled={loading}>
-            {editingType ? 'Update' : 'Create'} Class Type
+          <Button 
+            type="submit" 
+            onClick={handleSubmit} 
+            disabled={loading || !isFormValid()}
+            gradientDuoTone="purpleToBlue"
+          >
+            {loading ? (
+              <>
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                {editingType ? 'Updating...' : 'Creating...'}
+              </>
+            ) : (
+              <>
+                {editingType ? 'Update' : 'Create'} Class Type
+              </>
+            )}
           </Button>
-          <Button color="gray" onClick={() => setShowModal(false)}>
+          <Button color="gray" onClick={() => setShowModal(false)} disabled={loading}>
             Cancel
           </Button>
         </Modal.Footer>

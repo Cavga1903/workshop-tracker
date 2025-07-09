@@ -325,9 +325,9 @@ export default function Signup() {
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? (
-                    <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                   ) : (
-                    <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                   )}
                 </button>
               </div>
@@ -386,9 +386,9 @@ export default function Signup() {
                     onClick={toggleConfirmPasswordVisibility}
                   >
                     {showConfirmPassword ? (
-                      <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      <HiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                     ) : (
-                      <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                      <HiEye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                     )}
                   </button>
                 </div>

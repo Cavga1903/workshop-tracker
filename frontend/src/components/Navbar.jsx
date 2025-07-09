@@ -12,10 +12,12 @@ import {
   PieChart,
   Plus,
   User,
+  Users,
   LogOut,
   Sun,
   Moon,
-  Settings
+  Settings,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { BRANDING_MESSAGES } from '../config/branding';
@@ -70,14 +72,18 @@ export default function Navbar() {
     { path: '/add-expense', name: 'Add Expense', icon: Plus },
     { path: '/incomes', name: 'Income Records', icon: DollarSign },
     { path: '/expenses', name: 'Expense Records', icon: CreditCard },
-    { path: '/admin/class-types', name: 'Add Class Type', icon: Plus },
-    ...(profile?.role === 'admin' ? [{ path: '/admin/class-types', name: 'Manage Class Types', icon: Settings }] : []),
+    ...(profile?.role === 'admin' ? [
+      { path: '/admin/class-types', name: 'Manage Class Types', icon: Settings },
+      { path: '/admin/email-settings', name: 'Email Settings', icon: Settings }
+    ] : []),
   ];
 
   const analyticsItems = [
+    { path: '/analytics', name: 'Enhanced Analytics', icon: BarChart3 },
     { path: '/category-breakdown', name: 'Category Breakdown', icon: PieChart },
-    { path: '/class-income-breakdown', name: 'Class Income', icon: BarChart3 },
+    { path: '/class-income-breakdown', name: 'Class Income', icon: TrendingUp },
     { path: '/monthly-trend', name: 'Monthly Trend', icon: TrendingUp },
+    { path: '/who-paid', name: 'Who Paid', icon: FileText },
   ];
 
   const DropdownMenu = ({ items, isOpen, onClose }) => (
@@ -188,7 +194,7 @@ export default function Navbar() {
           </div>
 
           <NavLink
-            to="/who-paid"
+            to="/documents"
             onClick={() => setIsMobileMenuOpen(false)}
             className={({ isActive }) => `
               flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200
@@ -199,7 +205,37 @@ export default function Navbar() {
             `}
           >
             <FileText className="h-5 w-5" />
-            Who Paid
+            Documents
+          </NavLink>
+
+          <NavLink
+            to="/calendar"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={({ isActive }) => `
+              flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200
+              ${isActive 
+                ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }
+            `}
+          >
+            <Calendar className="h-5 w-5" />
+            Calendar
+          </NavLink>
+
+          <NavLink
+            to="/clients"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className={({ isActive }) => `
+              flex items-center gap-3 px-4 py-3 rounded-lg transition-colors duration-200
+              ${isActive 
+                ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }
+            `}
+          >
+            <Users className="h-5 w-5" />
+            Clients
           </NavLink>
         </div>
       </div>
@@ -248,9 +284,9 @@ export default function Navbar() {
                     openDropdown === 'actions' ? 'rotate-180' : ''
                   }`} />
                 </button>
-                <DropdownMenu 
-                  items={actionItems} 
-                  isOpen={openDropdown === 'actions'} 
+                <DropdownMenu
+                  items={actionItems}
+                  isOpen={openDropdown === 'actions'}
                   onClose={closeDropdowns}
                 />
               </div>
@@ -268,15 +304,15 @@ export default function Navbar() {
                     openDropdown === 'analytics' ? 'rotate-180' : ''
                   }`} />
                 </button>
-                <DropdownMenu 
-                  items={analyticsItems} 
-                  isOpen={openDropdown === 'analytics'} 
+                <DropdownMenu
+                  items={analyticsItems}
+                  isOpen={openDropdown === 'analytics'}
                   onClose={closeDropdowns}
                 />
               </div>
 
               <NavLink
-                to="/who-paid"
+                to="/documents"
                 className={({ isActive }) => `
                   flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
                   ${isActive 
@@ -286,7 +322,35 @@ export default function Navbar() {
                 `}
               >
                 <FileText className="h-5 w-5" />
-                Who Paid
+                Documents
+              </NavLink>
+
+              <NavLink
+                to="/calendar"
+                className={({ isActive }) => `
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+                  ${isActive 
+                    ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }
+                `}
+              >
+                <Calendar className="h-5 w-5" />
+                Calendar
+              </NavLink>
+
+              <NavLink
+                to="/clients"
+                className={({ isActive }) => `
+                  flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200
+                  ${isActive 
+                    ? 'bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }
+                `}
+              >
+                <Users className="h-5 w-5" />
+                Clients
               </NavLink>
             </div>
 
@@ -300,7 +364,7 @@ export default function Navbar() {
                 {isDarkMode ? (
                   <Sun className="h-5 w-5 text-yellow-500" />
                 ) : (
-                  <Moon className="h-5 w-5 text-gray-600" />
+                  <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 )}
               </button>
 
@@ -309,59 +373,66 @@ export default function Navbar() {
                 <div className="relative">
                   <button
                     onClick={() => toggleDropdown('user')}
-                    className="flex items-center gap-2 p-2 rounded-lg transition-all duration-200 
-                             hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center">
-                      {profile?.avatar_url ? (
-                        <img 
-                          src={profile.avatar_url} 
-                          alt="Avatar" 
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                    <div className="hidden sm:block text-left">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {profile?.full_name || 'User'}
+                      className="flex items-center gap-2 p-2 rounded-lg transition-all duration-200 
+                               hover:bg-gray-50 dark:hover:bg-gray-700"
+                    >
+                      <div className="w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center overflow-hidden">
+                        {profile?.avatar_url ? (
+                          <img 
+                            src={profile.avatar_url} 
+                            alt="Avatar" 
+                            className="w-8 h-8 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div className={`w-8 h-8 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center ${profile?.avatar_url ? 'hidden' : ''}`}>
+                          <span className="text-white text-sm font-medium">
+                            {profile?.full_name?.[0] || user?.user_metadata?.full_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.email}
+                      <div className="hidden sm:block text-left">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {profile?.full_name || user?.user_metadata?.full_name || 'User'}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </div>
                       </div>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
+                      <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${
                       openDropdown === 'user' ? 'rotate-180' : ''
                     }`} />
                   </button>
                   
                   <div className={`
-                    absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg 
-                    border border-gray-200 dark:border-gray-700 py-2 z-50 transform transition-all duration-200
+                      absolute top-full right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg 
+                      border border-gray-200 dark:border-gray-700 py-2 z-50 transform transition-all duration-200
                     ${openDropdown === 'user' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}
                   `}>
-                    <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
-                        {profile?.full_name || 'User'}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.email}
-                      </p>
-                    </div>
+                      <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          {profile?.full_name || user?.user_metadata?.full_name || 'User'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </p>
+                      </div>
                     <NavLink
                       to="/profile"
                       onClick={closeDropdowns}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 
-                               hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 
+                                 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                     >
-                      <Settings className="h-4 w-4" />
-                      Profile Settings
+                        <Settings className="h-4 w-4" />
+                        Profile Settings
                     </NavLink>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 
-                               hover:bg-red-50 dark:hover:bg-red-900 transition-colors duration-200 w-full text-left"
+                        className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 dark:text-red-400 
+                                 hover:bg-red-50 dark:hover:bg-red-900 transition-colors duration-200 w-full text-left"
                     >
                       <LogOut className="h-4 w-4" />
                       Sign Out

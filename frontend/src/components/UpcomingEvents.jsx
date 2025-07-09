@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Spinner, Alert, Button } from 'flowbite-react';
 import { 
   Calendar, 
@@ -19,6 +20,7 @@ export default function UpcomingEvents() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -225,7 +227,7 @@ export default function UpcomingEvents() {
             </p>
             <Button
               gradientDuoTone="cyanToBlue"
-              onClick={() => window.location.href = '/add-income'}
+              onClick={() => navigate('/add-income')}
             >
               Schedule Workshop
             </Button>
@@ -243,7 +245,7 @@ export default function UpcomingEvents() {
         </h3>
         <button 
           className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium flex items-center"
-          onClick={() => window.location.href = '/incomes'}
+          onClick={() => navigate('/incomes')}
         >
           View all
           <ChevronRight className="h-4 w-4 ml-1" />

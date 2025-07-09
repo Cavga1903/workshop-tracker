@@ -160,7 +160,7 @@ export default function ExpenseList() {
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading expenses...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading expenses...</p>
         </div>
       </div>
     );

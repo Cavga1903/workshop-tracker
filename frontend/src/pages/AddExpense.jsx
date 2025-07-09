@@ -4,6 +4,7 @@ import { HiCurrencyDollar, HiUser, HiCalendar, HiTag, HiCollection } from 'react
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import supabase from '../supabase/client';
 import { useAuth } from '../contexts/AuthContext';
+import { notifyNewExpense } from '../utils/emailNotifications';
 
 const initialState = {
   month: '',
@@ -72,12 +73,20 @@ export default function AddExpense() {
         category: form.category,
       };
       
-      const { error } = await supabase.from('expenses').insert([expenseData]);
+      const { data, error } = await supabase.from('expenses').insert([expenseData]).select().single();
       
       if (error) throw error;
       
       setSuccess(true);
       setForm(initialState);
+      
+      // Send email notification in background (don't block UI)
+      if (data) {
+        notifyNewExpense(data).catch(err => {
+          console.log('Email notification failed (non-critical):', err);
+        });
+      }
+      
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       setError(err.message);

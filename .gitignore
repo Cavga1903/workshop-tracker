@@ -3,44 +3,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-<<<<<<< HEAD
-
-# Build outputs
-dist/
-build/
-*.tgz
-*.tar.gz
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-logs
-*.log
-=======
 pnpm-debug.log*
 .pnpm-debug.log*
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Runtime data
 pids
@@ -50,22 +14,11 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
-<<<<<<< HEAD
-=======
 *.lcov
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # nyc test coverage
 .nyc_output
 
-<<<<<<< HEAD
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-=======
 # Grunt intermediate storage
 .grunt
 
@@ -90,7 +43,6 @@ jspm_packages/
 # Optional eslint cache
 .eslintcache
 
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 # Optional REPL history
 .node_repl_history
 
@@ -100,38 +52,6 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-<<<<<<< HEAD
-# dotenv environment variables file
-.env
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-=======
 # dotenv environment variable files
 .env
 .env.development.local
@@ -167,18 +87,11 @@ build/
 .out
 .storybook-out
 storybook-static
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Temporary folders
 tmp/
 temp/
 
-<<<<<<< HEAD
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-=======
 # Runtime data
 pids
 *.pid
@@ -234,20 +147,10 @@ $RECYCLE.BIN/
 
 # Linux
 *~
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Backup files
 *.bak
 *.backup
-<<<<<<< HEAD
-
-# Excel files (if not needed in repo)
-*.xlsx
-*.xls
-
-# PDF files (if not needed in repo)
-*.pdf 
-=======
 *.old
 *.orig
 
@@ -314,4 +217,3 @@ settings.local.*
 
 # GitHub Copilot
 .github/copilot/ 
->>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1

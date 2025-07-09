@@ -5,33 +5,24 @@ A modern, full-stack web application for managing creative workshops, tracking i
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Workshop Management**: Create, schedule, and manage creative workshops
-- **Income Tracking**: Record workshop payments and revenue
-- **Expense Management**: Track workshop-related expenses and materials
-- **Financial Analytics**: Comprehensive financial insights and reporting
-
-### 🎨 Workshop Types Supported
-- Terrarium Design
-- Candle Making
-- Botanical Wall Art
-- Mosaic Crafts
-- Pottery & Clay Work
-- And many more creative workshops!
+- **Workshop & Client Management**: Create, schedule, and manage creative workshops and clients.
+- **Document Storage**: Upload and manage invoices, receipts, and other documents.
+- **Income & Expense Tracking**: Record workshop payments, revenue, and related expenses.
+- **Financial Analytics**: Comprehensive financial insights and reporting with interactive charts.
+- **Calendar View**: Visualize upcoming workshops in a calendar.
 
 ### 📊 Dashboard Features
-- **Real-time Financial Summary**: Income, expenses, and profit overview
-- **Quick Metrics Cards**: Key performance indicators at a glance
-- **Upcoming Events**: Smart calendar with workshop scheduling
-- **AI-powered Insights**: Intelligent suggestions for business optimization
-- **Performance Charts**: Visual analytics with interactive charts
-- **Recent Activity Feed**: Timeline of all workshop activities
+- **Real-time Financial Summary**: Income, expenses, and profit overview.
+- **Quick Metrics Cards**: Key performance indicators at a glance.
+- **Upcoming Events**: Smart calendar with workshop scheduling.
+- **AI-powered Insights**: Intelligent suggestions for business optimization.
+- **Recent Activity Feed**: Timeline of all workshop activities.
 
 ### 🌟 Modern UI/UX
-- **Responsive Design**: Beautiful on desktop, tablet, and mobile
-- **Dark Mode Support**: Toggle between light and dark themes
-- **Modern Navigation**: Dropdown menus with organized sections
-- **Smooth Animations**: Professional hover effects and transitions
-- **Accessibility**: WCAG compliant design patterns
+- **Responsive Design**: Beautiful on desktop, tablet, and mobile.
+- **Dark Mode Support**: Toggle between light and dark themes.
+- **Modern Navigation**: Dropdown menus with organized sections.
+- **Smooth Animations**: Professional hover effects and transitions.
 
 ## 🛠 Tech Stack
 
@@ -45,158 +36,132 @@ A modern, full-stack web application for managing creative workshops, tracking i
 - **Vite** - Fast development build tool
 
 ### Backend
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web application framework
-- **Supabase** - Backend-as-a-Service
+- **Node.js & Express.js**: Powers the backend API.
+- **Supabase**: Backend-as-a-Service for:
   - PostgreSQL database
   - Real-time subscriptions
-  - Authentication & authorization
-  - Row Level Security (RLS)
+  - Authentication & Authorization (RLS)
+  - File Storage
 
 ### Development Tools
-- **ESLint** - Code linting and formatting
-- **Git** - Version control
-- **GitHub** - Repository hosting and CI/CD
+- **Concurrently**: Runs frontend and backend servers simultaneously.
+- **ESLint**: Code linting and formatting.
+- **Git & GitHub**: Version control and repository hosting.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- npm or yarn
-- Supabase account
+- Node.js (v18 or higher)
+- npm (v9 or higher)
+- A Supabase account
 
-### Installation
+### Installation & Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/workshop-tracker.git
-   cd workshop-tracker
-   ```
+1.  **Clone the Repository**
+    ```bash
+    git clone https://github.com/Cavga1903/workshop-tracker.git
+    cd workshop-tracker
+    ```
 
-2. **Install Frontend Dependencies**
-   ```bash
-   cd frontend
-   npm install
-   ```
+2.  **Install All Dependencies**
+    This single command installs dependencies for the root, frontend, and backend.
+    ```bash
+    npm run install:all
+    ```
 
-3. **Install Backend Dependencies**
-   ```bash
-   cd ../backend
-   npm install
-   ```
+3.  **Set Up Environment Variables**
 
-4. **Environment Setup**
-   ```bash
-   # Copy environment templates
-   cp .env.example .env
-   
-   # Add your Supabase credentials
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
+    You need to create two `.env` files, one for the frontend and one for the backend.
 
-5. **Start Development Servers**
-   ```bash
-   # Frontend (runs on http://localhost:5173)
-   cd frontend
-   npm run dev
-   
-   # Backend (runs on http://localhost:3000)
-   cd ../backend
-   npm run dev
-   ```
+    *   **Frontend Environment (`frontend/.env`)**:
+        Create a file named `.env` inside the `frontend` directory and add your Supabase credentials. These keys are safe to expose in the browser.
+        ```
+        VITE_SUPABASE_URL=YOUR_SUPABASE_URL
+        VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+        ```
+
+    *   **Backend Environment (`backend/.env`)**:
+        Create a file named `.env` inside the `backend` directory. Add your Supabase URL and **Service Role Key**. This key has full access and must be kept secret.
+        ```
+        SUPABASE_URL=YOUR_SUPABASE_URL
+        SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
+        ```
+
+4.  **Run Database Migration**
+    - Log in to your Supabase project.
+    - Go to the **SQL Editor**.
+    - Open the `database-migration.sql` file from this project, copy its content, and run it in the Supabase SQL Editor. This will set up all the required tables and policies.
+
+5.  **Start the Development Servers**
+    Run the following command from the root directory to start both frontend and backend servers.
+    ```bash
+    npm run dev
+    ```
+    - Frontend will be available at `http://localhost:5173`
+    - Backend will be available at `http://localhost:3000`
 
 ## 📱 Project Structure
 
 ```
-workshop-tracker/
-├── frontend/                 # React frontend application
+.
+├── backend/            # Node.js & Express.js API
+│   ├── routes/
+│   ├── supabase/
+│   ├── .env            # (Create this) Backend environment variables
+│   └── package.json
+├── frontend/           # React & Vite Frontend
 │   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Application pages
-│   │   ├── contexts/       # React contexts (Auth, etc.)
-│   │   ├── lib/           # Utility libraries
-│   │   └── supabase/      # Supabase client configuration
-│   ├── public/            # Static assets
-│   └── package.json       # Frontend dependencies
-├── backend/               # Node.js backend application
-│   ├── routes/           # API route handlers
-│   ├── supabase/         # Supabase server configuration
-│   └── package.json      # Backend dependencies
-├── .gitignore            # Git ignore rules
-└── README.md            # Project documentation
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── contexts/
+│   │   └── utils/
+│   ├── .env            # (Create this) Frontend environment variables
+│   └── package.json
+├── supabase/           # Supabase-specific configurations (e.g., functions)
+├── scripts/            # Automation scripts
+├── .gitignore
+├── database-migration.sql # Main database setup script
+├── package.json        # Root package with concurrently script
+└── README.md
 ```
 
 ## 🗄 Database Schema
 
-### Core Tables
-- **`users`** - User authentication and profiles
-- **`incomes`** - Workshop income records
-- **`expenses`** - Workshop expense tracking
-- **`profiles`** - Extended user profile information
+The `database-migration.sql` script creates the following core tables:
 
-### Key Features
-- Row Level Security (RLS) enabled
-- Real-time subscriptions
-- Automatic timestamps
-- Foreign key relationships
-
-## 🎨 Component Architecture
-
-### Enhanced Dashboard Components
-- **`QuickMetricsCards`** - Key performance indicators
-- **`UpcomingEvents`** - Workshop calendar and reminders
-- **`FinancialInsights`** - AI-powered business insights
-- **`MiniChartsPanel`** - Interactive data visualizations
-- **`UserProfileSnapshot`** - User statistics and achievements
-- **`RecentActivityFeed`** - Activity timeline
-- **`Navbar`** - Modern responsive navigation
+- **`profiles`**: Extends `auth.users` with profile data like name, role, etc.
+- **`class_types`**: Stores different types of workshops offered (e.g., Terrarium, Pottery).
+- **`clients`**: Manages information about clients or companies.
+- **`workshops`**: Schedules and details of each workshop event.
+- **`workshop_participants`**: Links clients to workshops they attend.
+- **`incomes`**: Tracks revenue from workshops.
+- **`expenses`** - Tracks workshop-related expenses.
+- **`documents`**: Stores uploaded files (invoices, contracts) linked to other records.
+- **`email_notifications`**: Logs notifications sent from the system.
 
 ## 🔐 Authentication
 
-- Supabase Auth integration
-- Email/password authentication
-- Protected routes with context
-- Automatic session management
-- Row Level Security (RLS)
-
-## 📊 Analytics & Insights
-
-- Financial trend analysis
-- Workshop popularity metrics
-- Participant engagement tracking
-- Revenue optimization suggestions
-- Expense category breakdowns
-
-## 🌙 Theming
-
-- Light/Dark mode toggle
-- System preference detection
-- Persistent theme storage
-- Tailwind CSS theming
-- Consistent color schemes
-
-## 📱 Responsive Design
-
-- Mobile-first approach
-- Tablet optimization
-- Desktop enhancements
-- Touch-friendly interactions
-- Accessible navigation
+- **Supabase Auth**: Manages user sign-up, sign-in, and sessions.
+- **Email/Password Authentication**: Standard login method.
+- **Domain Restriction**: Sign-up and login are restricted to company emails (`@kraftstories.com`, `@kraftuniverse.com`).
+- **Protected Routes**: Ensures only authenticated users can access private pages.
+- **Row Level Security (RLS)**: Enforces data access rules at the database level, ensuring users can only see their own data.
 
 ## 🚀 Deployment
 
-### Frontend Deployment (Vercel/Netlify)
+### Frontend (Vercel/Netlify)
 ```bash
-cd frontend
+# In the /frontend directory
 npm run build
 ```
+Deploy the generated `dist` folder. Remember to set the environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) in your hosting provider's settings.
 
-### Backend Deployment (Railway/Heroku)
+### Backend (Railway/Heroku/Render)
 ```bash
-cd backend
+# In the /backend directory
 npm start
 ```
+Deploy the backend as a Node.js application. Remember to set the environment variables (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `PORT`) in your hosting provider's settings.
 
 ## 🤝 Contributing
 

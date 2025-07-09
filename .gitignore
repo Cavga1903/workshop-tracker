@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+<<<<<<< HEAD
 
 # Build outputs
 dist/
@@ -36,6 +37,10 @@ Thumbs.db
 # Logs
 logs
 *.log
+=======
+pnpm-debug.log*
+.pnpm-debug.log*
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Runtime data
 pids
@@ -45,16 +50,47 @@ pids
 
 # Coverage directory used by tools like istanbul
 coverage/
+<<<<<<< HEAD
+=======
+*.lcov
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # nyc test coverage
 .nyc_output
 
+<<<<<<< HEAD
 # Dependency directories
 jspm_packages/
 
 # Optional npm cache directory
 .npm
 
+=======
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 # Optional REPL history
 .node_repl_history
 
@@ -64,6 +100,7 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
+<<<<<<< HEAD
 # dotenv environment variables file
 .env
 
@@ -94,19 +131,115 @@ jspm_packages/
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+=======
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Vite build output
+dist/
+dist-ssr/
+*.local
+
+# Rollup build output
+build/
+
+# Storybook build outputs
+.out
+.storybook-out
+storybook-static
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Temporary folders
 tmp/
 temp/
 
+<<<<<<< HEAD
 # Database files
 *.db
 *.sqlite
 *.sqlite3
+=======
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Logs
+logs
+*.log
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1
 
 # Backup files
 *.bak
 *.backup
+<<<<<<< HEAD
 
 # Excel files (if not needed in repo)
 *.xlsx
@@ -114,3 +247,71 @@ temp/
 
 # PDF files (if not needed in repo)
 *.pdf 
+=======
+*.old
+*.orig
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Supabase
+.supabase/
+
+# Environment variables
+.env*
+!.env.example
+
+# Generated files
+*.map
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+
+# Python (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Auto-generated documentation
+docs/_build/
+
+# Build artifacts
+*.tar.gz
+*.zip
+*.rar
+
+# Local configuration files
+config.local.*
+settings.local.*
+
+# Cursor AI
+.cursor/
+
+# GitHub Copilot
+.github/copilot/ 
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1

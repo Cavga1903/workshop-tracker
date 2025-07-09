@@ -1,6 +1,53 @@
 {
+<<<<<<< HEAD
   "dependencies": {
     "flowbite": "^3.1.2",
     "flowbite-react": "^0.11.8"
   }
 }
+=======
+  "name": "workshop-tracker",
+  "version": "1.0.0",
+  "description": "A modern, full-stack web application for managing creative workshops, tracking income and expenses, and providing insightful analytics for workshop instructors.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "auto-commit": "./scripts/auto-commit.sh",
+    "commit": "./scripts/auto-commit.sh",
+    "push": "git push origin main",
+    "status": "git status",
+    "log": "git log --oneline -10",
+    "setup": "echo '🎨 Workshop Tracker Setup' && npm run install:all",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/workshop-tracker.git"
+  },
+  "keywords": [
+    "workshop",
+    "tracker",
+    "finance",
+    "income",
+    "expense",
+    "analytics",
+    "react",
+    "node.js",
+    "supabase"
+  ],
+  "author": "Tolga Cavga",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/workshop-tracker/issues"
+  },
+  "homepage": "https://github.com/your-username/workshop-tracker#readme",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 
+>>>>>>> ce04bea409d084ca61ad5c8ae4e711282b26d9b1

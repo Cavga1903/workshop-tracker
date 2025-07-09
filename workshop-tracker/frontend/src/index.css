@@ -1,0 +1,359 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    
+    /* App-specific variables */
+    --navbar-height: 80px;
+    --sidebar-width: 280px;
+    --content-max-width: 1400px;
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    @apply scroll-smooth;
+    /* Ensure html has proper background */
+    @apply bg-gray-50 dark:bg-gray-900;
+  }
+  
+  body {
+    @apply bg-background text-foreground min-h-screen overflow-x-hidden;
+    /* Additional background fallback for dark mode */
+    @apply bg-gray-50 dark:bg-gray-900;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Ensure all elements have proper dark mode support */
+  input, textarea, select {
+    @apply bg-background text-foreground border-border;
+  }
+  
+  /* Focus ring consistency */
+  *:focus {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Custom Animations */
+.animate-in {
+  animation: animate-in 0.3s ease-in-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.2s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Card Hover Effects */
+.hover-card-effect {
+  @apply transition-all duration-300 ease-in-out hover:shadow-lg dark:hover:shadow-gray-800;
+}
+
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+/* Button Styles */
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 py-2 px-4;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2;
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-10 px-4 gap-2;
+}
+
+/* Action Button Styles */
+.action-btn {
+  @apply p-2 rounded-lg transition-all duration-200 hover:bg-accent/80 focus:ring-2 focus:ring-ring;
+}
+
+.action-btn-primary {
+  @apply action-btn bg-primary/10 text-primary hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30;
+}
+
+.action-btn-secondary {
+  @apply action-btn bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
+}
+
+.action-btn-danger {
+  @apply action-btn bg-destructive/10 text-destructive hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30;
+}
+
+/* Input Styles */
+.input-primary {
+  @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Card Styles */
+.card-primary {
+  @apply rounded-lg border bg-card text-card-foreground shadow-sm hover-card-effect;
+}
+
+.card-compact {
+  @apply rounded-lg border bg-card text-card-foreground shadow-sm p-4;
+}
+
+/* Layout Utilities */
+.layout-container {
+  @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  max-width: var(--content-max-width);
+}
+
+.section-padding {
+  @apply py-6 sm:py-8 lg:py-12;
+}
+
+.content-spacing {
+  @apply space-y-6;
+}
+
+.form-spacing {
+  @apply space-y-4;
+}
+
+/* Navigation Styles */
+.nav-link {
+  @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-accent hover:text-accent-foreground;
+}
+
+.nav-link-active {
+  @apply nav-link bg-primary text-primary-foreground hover:bg-primary/90;
+}
+
+.nav-dropdown {
+  @apply absolute top-full left-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-lg py-2 z-50 animate-slide-down;
+}
+
+/* Typography */
+.heading-1 {
+  @apply scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl;
+}
+
+.heading-2 {
+  @apply scroll-m-20 text-3xl font-semibold tracking-tight;
+}
+
+.heading-3 {
+  @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+}
+
+.heading-4 {
+  @apply scroll-m-20 text-xl font-semibold tracking-tight text-foreground;
+}
+
+.body-text {
+  @apply leading-7 [&:not(:first-child)]:mt-6;
+}
+
+.body-text-sm {
+  @apply text-sm leading-6 text-muted-foreground;
+}
+
+/* Grid Layouts */
+.grid-cards {
+  @apply grid gap-4 md:grid-cols-2 lg:grid-cols-3;
+}
+
+.grid-cards-4 {
+  @apply grid gap-4 md:grid-cols-2 lg:grid-cols-4;
+}
+
+.grid-forms {
+  @apply grid gap-4 md:grid-cols-2;
+}
+
+/* Status Badges */
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-success {
+  @apply status-badge bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+}
+
+.status-warning {
+  @apply status-badge bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400;
+}
+
+.status-error {
+  @apply status-badge bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400;
+}
+
+.status-info {
+  @apply status-badge bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400;
+}
+
+/* Page Layout */
+.page-layout {
+  @apply min-h-screen bg-background;
+}
+
+.page-content {
+  @apply layout-container content-spacing section-padding;
+}
+
+.page-header {
+  @apply flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8;
+}
+
+.page-title {
+  @apply heading-2;
+}
+
+.page-description {
+  @apply body-text-sm mt-2;
+}
+
+/* Table Styles */
+.table-container {
+  @apply overflow-x-auto;
+}
+
+.table-cell-actions {
+  @apply flex items-center gap-2;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .layout-container {
+    @apply px-4;
+  }
+  
+  .section-padding {
+    @apply py-4;
+  }
+  
+  .content-spacing {
+    @apply space-y-4;
+  }
+}

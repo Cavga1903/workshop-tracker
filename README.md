@@ -143,7 +143,7 @@ The `database-migration.sql` script creates the following core tables:
 
 - **Supabase Auth**: Manages user sign-up, sign-in, and sessions.
 - **Email/Password Authentication**: Standard login method.
-- **Domain Restriction**: Sign-up and login are restricted to company emails (`@kraftstories.com`, `@kraftuniverse.com`).
+- **Domain Restriction**: Sign-up and login are restricted to company emails (`@yourcompanydomain.com`, `@yourcompanydomain2.com`).
 - **Protected Routes**: Ensures only authenticated users can access private pages.
 - **Row Level Security (RLS)**: Enforces data access rules at the database level, ensuring users can only see their own data.
 
